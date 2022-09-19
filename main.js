@@ -8,6 +8,8 @@ let react = {
     //
     _componentState: [],
 
+    // FIXME: We need to increment this ahead of time.
+    //        Because we make the recursive call before the 'incrementComponentIndex' in 'renderComponent' runs.
     _currentComponentIndex: 0,
 
     resetForNextRender() {
@@ -95,6 +97,7 @@ function htmlFromObject(object) {
 function createComponent(Component, props) {
     // Use heuristic to figure out if this is the same component or not.
     let previousComponentState = react.getCurrentComponentState();
+    console.log(previousComponentState);
     if (previousComponentState !== null) {
         let bSameType = previousComponentState.Component === Component;
         let bSameKey = previousComponentState.object.attributes["key"] === props.key;
