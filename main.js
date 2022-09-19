@@ -1,13 +1,83 @@
 let react = {
-    // FIXME
+    // List of objects with following members:
+    //
+    //     hookState
+    //     currentHookIndex
+    //     Component
+    //     object
+    //
+    _componentState: [],
+
+    _currentComponentIndex: 0,
+
+    resetForNextRender() {
+        this._currentComponentIndex = 0;
+    },
+
+    incrementComponentIndex() {
+        this._currentComponentIndex++;
+    },
+
+    incrementHookCallIndex() {
+        this.getCurrentComponentState().currentHookIndex++;
+    },
+
+    getCurrentComponentState() {
+        let componentState = this._componentState[this._currentComponentIndex];
+        if (componentState === undefined) {
+            return null;
+        } else {
+            return componentState;
+        }
+    },
+
+    getCurrentHookState() {
+        let componentState = this.getCurrentComponentState();
+        let hookState = componentState.hookState[componentState.currentHookIndex];
+        if (hookState === undefined) {
+            return null;
+        } else {
+            return hookState;
+        }
+    },
+
+    resetCurrentComponentRetainingState() {
+        let previousComponentState = this.getCurrentComponentState();
+
+        this._componentState[this._currentComponentIndex] = {
+            hookState: previousComponentState.hookState,
+            currentHookIndex: 0,
+            Component: null,
+            object: null,
+        }
+    },
+
+    resetComponentDiscardingState() {
+        this._componentState[this._currentComponentIndex] = {
+            hookState: [],
+            currentHookIndex: 0,
+            Component: null,
+            object: null,
+        };
+    },
+
+    renderComponent(Component, props) {
+        let object = Component(props);
+        this.getCurrentComponentState().object = object;
+        react.incrementComponentIndex();
+        return object;
+    },
 };
 
 // Converts out simplified object representation into an actual HTML element.
 function htmlFromObject(object) {
-    let element = document.createElement(object.type);
+    let element = document.createElement(object.Component);
     element.innerText = object.body;
 
     for (let [attribute, value] of Object.entries(object.attributes)) {
+        if (attribute === "key")
+            continue;
+
         element.setAttribute(attribute, value);
     }
 
@@ -22,40 +92,29 @@ function htmlFromObject(object) {
     return element;
 }
 
-// Compare two objects without considering children.
-function areObjectsShallowEqual(object1, object2) {
-    // Notice that 'children' is missing from this list.
-    let members = [
-        "type",
-        "body",
-        "attributes",
-        "onClick",
-    ];
+function createComponent(Component, props) {
+    // Use heuristic to figure out if this is the same component or not.
+    let previousComponentState = react.getCurrentComponentState();
+    if (previousComponentState !== null) {
+        let bSameType = previousComponentState.Component === Component;
+        let bSameKey = previousComponentState.object.attributes["key"] === props.key;
 
-    for (let member of members) {
-        if (object1[member] !== object2[member])
-            return false;
+        if (bSameType && bSameKey) {
+            // This is the same component, retain state.
+            react.resetCurrentComponentRetainingState();
+
+            return react.renderComponent(Component, props);
+        }
     }
 
-    return true;
-}
+    // This is not the same component or the key changed, discard state.
+    react.resetComponentDiscardingState();
 
-function createComponent(Component, props) {
-    // FIXME: This is where we need to compare the type of the component with before.
-    //        If the type is the same, we assign the same state (but consider 'key' attribute).
-    //        Otherwise, we discard the previous state and create new state.
-
-    react.pushHookCallIndex();
-    let object = Component(props);
-    react.popHookCallIndex();
-
-    react.incrementComponentIndex();
-
-    return object;
+    return react.renderComponent(Component, props);
 }
 
 function useState(defaultValue) {
-    let state = react.getHookState();
+    let state = react.getCurrentHookState();
     react.incrementHookCallIndex();
 
     function setValue(newValue) {
@@ -143,7 +202,7 @@ function Root(props) {
 let rootElement = document.getElementById("root");
 
 function updateRoot() {
-    react.reset();
+    react.resetForNextRender();
     
     let newRootObject = createComponent(Root, {});
 
