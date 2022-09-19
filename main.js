@@ -1,3 +1,4 @@
+// Converts out simplified object representation into an actual HTML element.
 function htmlFromObject(object) {
     let element = document.createElement(object.type);
     element.innerText = object.body;
@@ -17,6 +18,40 @@ function htmlFromObject(object) {
     return element;
 }
 
+let counterState = {};
+
+// Retrieves the state of the currently executing component.
+function getState() {
+    // FIXME: How does React keep track of the state.
+
+    return counterState;
+}
+
+function useState(id, defaultValue) {
+    // FIXME: How does React void using an 'id' here?
+
+    let state = getState();
+
+    function setValue(newValue) {
+        state[id] = newValue;
+
+        // FIXME: How is React able to only update this component?
+        updateRoot();
+    }
+
+    if (id in state) {
+        return [
+            state[id],
+            setValue,
+        ];
+    } else {
+        return [
+            defaultValue,
+            setValue,
+        ];
+    }
+}
+
 function HelloWorld(props) {
     /*
     <h1>Hello, world!</h1>
@@ -30,11 +65,7 @@ function HelloWorld(props) {
 }
 
 function Counter(props) {
-    let counter = 0;
-
-    function setCounter(newCounter) {
-        // FIXME
-    }
+    let [counter, setCounter] = useState("counter", 0);
 
     /*
     <div>
