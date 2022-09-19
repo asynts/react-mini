@@ -18,43 +18,54 @@ function htmlFromObject(object) {
     return element;
 }
 
-let counterState = {};
+// We assume that all hooks are called in the same order.
+// Thus we can just keep the state in an array and use the index to find it again.
+//
+// FIXME: How does this work with conditionally rendered components and loops?
+// FIXME: Currently, this is global, how can this work if we only re-render one component in the middle?
+let componentState = {
+    _states: [],
+    _callIndex: 0,
 
-// Retrieves the state of the currently executing component.
-function getState() {
-    // FIXME: How does React keep track of the state.
+    resetCallIndex() {
+        this._callIndex = 0;
+    },
 
-    return counterState;
-}
+    getNextState() {
+        if (this._callIndex >= this._states.length) {
+            this._states[this._callIndex] = {};
+        }
 
-function useState(id, defaultValue) {
-    // FIXME: How does React void using an 'id' here?
+        return this._states[this._callIndex++];
+    }
+};
 
-    let state = getState();
+function useState(defaultValue) {
+    let state = componentState.getNextState();
 
     function setValue(newValue) {
-        state[id] = newValue;
+        state.value = newValue;
 
         // FIXME: How is React able to only update this component?
         updateRoot();
     }
 
-    if (id in state) {
+    if (state.value === undefined) {
         return [
-            state[id],
+            defaultValue,
             setValue,
         ];
     } else {
         return [
-            defaultValue,
+            state.value,
             setValue,
         ];
     }
 }
 
-function HelloWorld(props) {
+function Hello(props) {
     /*
-    <h1>Hello, world!</h1>
+    <h1>Hello, {props.name}!</h1>
     */
     return {
         type: "h1",
@@ -65,7 +76,7 @@ function HelloWorld(props) {
 }
 
 function Counter(props) {
-    let [counter, setCounter] = useState("counter", 0);
+    let [counter, setCounter] = useState(0);
 
     /*
     <div>
@@ -101,9 +112,10 @@ function Root(props) {
         body: null,
         attributes: {},
         children: [
-            HelloWorld({
+            Hello({
                 name: "Fritz",
             }),
+            Counter(),
             Counter(),
         ],
     };
@@ -112,6 +124,7 @@ function Root(props) {
 let rootElement = document.getElementById("root");
 
 function updateRoot() {
+    componentState.resetCallIndex();
     let newRootObject = Root();
 
     let newRootElement = htmlFromObject(newRootObject);
