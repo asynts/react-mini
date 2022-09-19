@@ -1,3 +1,7 @@
+let react = {
+    // FIXME
+};
+
 // Converts out simplified object representation into an actual HTML element.
 function htmlFromObject(object) {
     let element = document.createElement(object.type);
@@ -18,35 +22,44 @@ function htmlFromObject(object) {
     return element;
 }
 
-// We assume that all hooks are called in the same order.
-// Thus we can just keep the state in an array and use the index to find it again.
-//
-// FIXME: How does this work with conditionally rendered components and loops?
-// FIXME: Currently, this is global, how can this work if we only re-render one component in the middle?
-let componentState = {
-    _states: [],
-    _callIndex: 0,
+// Compare two objects without considering children.
+function areObjectsShallowEqual(object1, object2) {
+    // Notice that 'children' is missing from this list.
+    let members = [
+        "type",
+        "body",
+        "attributes",
+        "onClick",
+    ];
 
-    resetCallIndex() {
-        this._callIndex = 0;
-    },
-
-    getNextState() {
-        if (this._callIndex >= this._states.length) {
-            this._states[this._callIndex] = {};
-        }
-
-        return this._states[this._callIndex++];
+    for (let member of members) {
+        if (object1[member] !== object2[member])
+            return false;
     }
-};
+
+    return true;
+}
+
+function createComponent(Component, props) {
+    // FIXME: This is where we need to compare the type of the component with before.
+    //        If the type is the same, we assign the same state (but consider 'key' attribute).
+    //        Otherwise, we discard the previous state and create new state.
+
+    react.pushHookCallIndex();
+    let object = Component(props);
+    react.popHookCallIndex();
+
+    react.incrementComponentIndex();
+
+    return object;
+}
 
 function useState(defaultValue) {
-    let state = componentState.getNextState();
+    let state = react.getHookState();
+    react.incrementHookCallIndex();
 
     function setValue(newValue) {
         state.value = newValue;
-
-        // FIXME: How is React able to only update this component?
         updateRoot();
     }
 
@@ -107,16 +120,22 @@ function Counter(props) {
 }
 
 function Root(props) {
+    /*
+    <div>
+        <Hello name="Fritz" />
+        <Counter />
+        <Counter />
+    </div>
+    */
+
     return {
         type: "div",
         body: null,
         attributes: {},
         children: [
-            Hello({
-                name: "Fritz",
-            }),
-            Counter(),
-            Counter(),
+            createComponent(Hello, { name: "Fritz" }),
+            createComponent(Counter, {}),
+            createComponent(Counter, {}),
         ],
     };
 }
@@ -124,8 +143,9 @@ function Root(props) {
 let rootElement = document.getElementById("root");
 
 function updateRoot() {
-    componentState.resetCallIndex();
-    let newRootObject = Root();
+    react.reset();
+    
+    let newRootObject = createComponent(Root, {});
 
     let newRootElement = htmlFromObject(newRootObject);
     rootElement.replaceWith(newRootElement);
