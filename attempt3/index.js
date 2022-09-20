@@ -1,3 +1,5 @@
+import { HtmlObject, ComponentObject, TextObject } from "./react.js"
+
 function Counter(component, props) {
     let [counter, setCounter] = component.useState("counter", 0);
 
@@ -11,24 +13,24 @@ function Counter(component, props) {
         <button onClick={onClick}>Increment</button>
     </div>
     */
-    return createHtmlObject({
+    return HtmlObject({
         type: "div",
         attributes: {},
         children: [
-            createHtmlObject({
+            HtmlObject({
                 type: "p",
                 attributes: {},
                 children: [
-                    createTextObject(`Counter: ${counter}`),
+                    TextObject(`Counter: ${counter}`),
                 ],
             }),
-            createHtmlObject({
+            HtmlObject({
                 type: "button",
                 attributes: {
                     onClick,
                 },
                 children: [
-                    createTextObject("Increment"),
+                    TextObject("Increment"),
                 ],
             }),
         ],
@@ -48,18 +50,18 @@ function Conditional(component, props) {
         <button onClick={onClick}>Toggle Visibility</button>
     </div>
     */
-    return createHtmlObject({
+    return HtmlObject({
         type: "div",
         attributes: {},
         children: [
             ...(isVisible ? props.children : []),
-            createHtmlObject({
+            HtmlObject({
                 type: "button",
                 attributes: {
                     onClick,
                 },
                 children: [
-                    createTextObject("Toggle Visiblity"),
+                    TextObject("Toggle Visiblity"),
                 ],
             }),
         ],
@@ -75,20 +77,20 @@ function Root(component, props) {
         </Conditional>
     </div>
     */
-    return createHtmlObject({
+    return HtmlObject({
         type: "div",
         attributes: {},
         children: [
-            createComponentObject({
+            ComponentObject({
                 Component: Conditional,
                 attributes: {},
                 children: [
-                    createComponentObject({
+                    ComponentObject({
                         Component: Counter,
                         attributes: {},
                         children: [],
                     }),
-                    createComponentObject({
+                    ComponentObject({
                         Component: Counter,
                         attributes: {},
                         children: [],
