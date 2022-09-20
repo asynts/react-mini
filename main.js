@@ -1,23 +1,19 @@
 let react = {
-    // List of objects with following members:
-    //
-    //     hookState
-    //     currentHookIndex
-    //     Component
-    //     object
-    //
-    _componentState: [],
+    // The component state is stored in a tree structure.
+    _componentStateTree: {
+        hookState: [],
+        currentHookIndex: 0,
+        Component: null,
+        renderedObject: null,
 
-    // FIXME: We need to increment this ahead of time.
-    //        Because we make the recursive call before the 'incrementComponentIndex' in 'renderComponent' runs.
-    _currentComponentIndex: 0,
-
-    resetForNextRender() {
-        this._currentComponentIndex = 0;
+        parent: null,
+        children: [],
     },
 
-    incrementComponentIndex() {
-        this._currentComponentIndex++;
+    _currentComponentState: null,
+
+    resetForNextRender() {
+        this._currentComponentState = this._componentStateTree;
     },
 
     incrementHookCallIndex() {
@@ -25,12 +21,7 @@ let react = {
     },
 
     getCurrentComponentState() {
-        let componentState = this._componentState[this._currentComponentIndex];
-        if (componentState === undefined) {
-            return null;
-        } else {
-            return componentState;
-        }
+        return this._currentComponentState;
     },
 
     getCurrentHookState() {
@@ -44,23 +35,16 @@ let react = {
     },
 
     resetCurrentComponentRetainingState() {
-        let previousComponentState = this.getCurrentComponentState();
-
-        this._componentState[this._currentComponentIndex] = {
-            hookState: previousComponentState.hookState,
-            currentHookIndex: 0,
-            Component: null,
-            object: null,
-        }
+        this._currentComponentState.currentHookIndex = 0;
+        this._currentComponentState.Component = null;
+        this._currentComponentState.renderedObject = null;
     },
 
     resetComponentDiscardingState() {
-        this._componentState[this._currentComponentIndex] = {
-            hookState: [],
-            currentHookIndex: 0,
-            Component: null,
-            object: null,
-        };
+        this._currentComponentState.hookState = [];
+        this._currentComponentState.currentHookIndex = 0;
+        this._currentComponentState.Component = null;
+        this._currentComponentState.renderedObject = null;
     },
 
     renderComponent(Component, props) {
