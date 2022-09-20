@@ -22,8 +22,16 @@ export class ComponentObject {
     }
 }
 
-export function createRoot({ Component, body, attributes, children, rootElement }) {
-    function objectToElement(object) {
+export class ReactInstance {
+    constructor({ RootComponent, body, attributes, children }) {
+        this.RootComponent = RootComponent;
+        this.body = body;
+        this.attributes = attributes;
+        this.children = children;
+        this.rootElement = null;
+    }
+
+    objectToElement(object) {
         console.log("objectToElement", object);
 
         if (object instanceof HtmlObject) {
@@ -40,7 +48,7 @@ export function createRoot({ Component, body, attributes, children, rootElement 
             }
 
             for (let childObject of object.children) {
-                let newChildElement = objectToElement(childObject);
+                let newChildElement = this.objectToElement(childObject);
                 newElement.appendChild(newChildElement);
             }
 
@@ -54,7 +62,7 @@ export function createRoot({ Component, body, attributes, children, rootElement 
             };
 
             let newObject = object.Component(state, object.attributes, object.children);
-            let newElement = objectToElement(newObject);
+            let newElement = this.objectToElement(newObject);
 
             newElement.setAttribute("data-component", object.Component.name);
 
@@ -62,19 +70,22 @@ export function createRoot({ Component, body, attributes, children, rootElement 
         }
     }
 
-    function render() {
-        let newRootObject = new ComponentObject({
-            Component,
-            body: body,
-            attributes: attributes,
-            children: children,
-        });
-
-        let newRootElement = objectToElement(newRootObject);
-
-        rootElement.replaceWith(newRootElement);
-        rootElement = newRootElement;
+    mount(rootElement) {
+        this.rootElement = rootElement;
+        this.render();
     }
 
-    render();
+    render() {
+        let newRootObject = new ComponentObject({
+            Component: this.RootComponent,
+            body: this.body,
+            attributes: this.attributes,
+            children: this.children,
+        });
+
+        let newRootElement = this.objectToElement(newRootObject);
+
+        this.rootElement.replaceWith(newRootElement);
+        this.rootElement = newRootElement;
+    }
 }

@@ -1,7 +1,7 @@
 import {
     HtmlObject,
     ComponentObject,
-    createRoot,
+    ReactInstance,
 } from "./react.js"
 
 function Counter(state, attributes, children) {
@@ -108,9 +108,10 @@ function Root(state, attributes, children) {
     });
 }
 
-createRoot({
-    Component: Root,
+let instance = new ReactInstance({
+    RootComponent: Root,
     attributes: {},
     children: [],
-    rootElement: document.getElementById("root"),
 });
+
+instance.mount(document.getElementById("root"));
