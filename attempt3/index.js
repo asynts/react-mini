@@ -1,7 +1,11 @@
-import { HtmlObject, ComponentObject, TextObject } from "./react.js"
+import {
+    HtmlObject,
+    ComponentObject,
+    createRoot,
+} from "./react.js"
 
-function Counter(component, props) {
-    let [counter, setCounter] = component.useState("counter", 0);
+function Counter(state, attributes, children) {
+    let [counter, setCounter] = state.useState("counter", 0);
 
     function onClick(event) {
         setCounter(counter + 1);
@@ -13,32 +17,31 @@ function Counter(component, props) {
         <button onClick={onClick}>Increment</button>
     </div>
     */
-    return HtmlObject({
+    return new HtmlObject({
         type: "div",
+        body: "",
         attributes: {},
         children: [
-            HtmlObject({
+            new HtmlObject({
                 type: "p",
+                body: `Counter: ${counter}`,
                 attributes: {},
-                children: [
-                    TextObject(`Counter: ${counter}`),
-                ],
+                children: [],
             }),
-            HtmlObject({
+            new HtmlObject({
                 type: "button",
+                body: "Increment",
                 attributes: {
-                    onClick,
+                    $onClick: onClick,
                 },
-                children: [
-                    TextObject("Increment"),
-                ],
+                children: [],
             }),
         ],
     });
 }
 
-function Conditional(component, props) {
-    let [isVisible, setIsVisible] = component.useState("isVisible", true);
+function Conditional(state, attributes, children) {
+    let [isVisible, setIsVisible] = state.useState("isVisible", true);
 
     function onClick(event) {
         setIsVisible(!isVisible);
@@ -50,25 +53,25 @@ function Conditional(component, props) {
         <button onClick={onClick}>Toggle Visibility</button>
     </div>
     */
-    return HtmlObject({
+    return new HtmlObject({
         type: "div",
+        body: "",
         attributes: {},
         children: [
-            ...(isVisible ? props.children : []),
-            HtmlObject({
+            ...(isVisible ? children : []),
+            new HtmlObject({
                 type: "button",
+                body: "Toggle Visibility",
                 attributes: {
-                    onClick,
+                    $onClick: onClick,
                 },
-                children: [
-                    TextObject("Toggle Visiblity"),
-                ],
+                children: [],
             }),
         ],
     });
 }
 
-function Root(component, props) {
+function Root(state, attributes, children) {
     /*
     <div>
         <Conditional>
@@ -77,21 +80,25 @@ function Root(component, props) {
         </Conditional>
     </div>
     */
-    return HtmlObject({
+    return new HtmlObject({
         type: "div",
+        body: "",
         attributes: {},
         children: [
-            ComponentObject({
+            new ComponentObject({
                 Component: Conditional,
+                body: "",
                 attributes: {},
                 children: [
-                    ComponentObject({
+                    new ComponentObject({
                         Component: Counter,
+                        body: "",
                         attributes: {},
                         children: [],
                     }),
-                    ComponentObject({
+                    new ComponentObject({
                         Component: Counter,
+                        body: "",
                         attributes: {},
                         children: [],
                     }),
@@ -100,3 +107,10 @@ function Root(component, props) {
         ],
     });
 }
+
+createRoot({
+    Component: Root,
+    attributes: {},
+    children: [],
+    rootElement: document.getElementById("root"),
+});
