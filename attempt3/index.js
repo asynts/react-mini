@@ -74,9 +74,9 @@ function Conditional(state, attributes, children) {
 function Root(state, attributes, children) {
     /*
     <div>
-        <Conditional>
-            <Counter />
-            <Counter />
+        <Conditional key="1">
+            <Counter key="1" />
+            <Counter key="2" />
         </Conditional>
     </div>
     */
@@ -88,29 +88,40 @@ function Root(state, attributes, children) {
             new ComponentObject({
                 Component: Conditional,
                 body: "",
-                attributes: {},
+                attributes: {
+                    key: "1",
+                },
                 children: [
                     new ComponentObject({
                         Component: Counter,
                         body: "",
-                        attributes: {},
+                        attributes: {
+                            key: "1",
+                        },
                         children: [],
                     }),
                     new ComponentObject({
                         Component: Counter,
                         body: "",
-                        attributes: {},
+                        attributes: {
+                            key: "2",
+                        },
                         children: [],
-                    }),
+                    }),        
                 ],
             }),
         ],
     });
 }
 
+/*
+<Root key="1" />
+*/
 let instance = new ReactInstance({
     RootComponent: Root,
-    attributes: {},
+    attributes: {
+        key: "1",
+    },
     children: [],
 });
 

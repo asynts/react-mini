@@ -22,18 +22,52 @@ export class ComponentObject {
     }
 }
 
+// FIXME: Get rid of nested component state if unused in render.
+export class ComponentState {
+    constructor(instance) {
+        this.instance = instance;
+
+        // Map 'key' to 'ComponentState'.
+        this.childComponentState = {};
+
+        // Used by 'useState' hook.
+        this.state = {};
+    }
+
+    getNestedComponentState(key) {
+        if (this.childComponentState[key] === undefined) {
+            this.childComponentState[key] = new ComponentState(this.instance);
+        }
+
+        return this.childComponentState[key];
+    }
+
+    useState(id, defaultValue) {
+        if (this.state[id] === undefined) {
+            this.state[id] = defaultValue;
+        }
+
+        function setValue(newValue) {
+            this.state[id] = newValue;
+            this.instance.queueRender();
+        }
+
+        return [this.state[id], setValue.bind(this)];
+    }
+}
+
 export class ReactInstance {
     constructor({ RootComponent, body, attributes, children }) {
         this.RootComponent = RootComponent;
         this.body = body;
         this.attributes = attributes;
         this.children = children;
+
         this.rootElement = null;
+        this.rootComponentState = null;
     }
 
-    objectToElement(object) {
-        console.log("objectToElement", object);
-
+    objectToElement(object, componentState) {
         if (object instanceof HtmlObject) {
             let newElement = document.createElement(object.type);
             
@@ -41,19 +75,25 @@ export class ReactInstance {
 
             for (let [attribute, value] of Object.entries(object.attributes)) {
                 if (attribute.startsWith("$")) {
-                    // FIXME: Deal with special attributes.
+                    if (attribute === "$onClick") {
+                        newElement.addEventListener("click", value);
+                    } else {
+                        throw new Error("Assertion failed");
+                    }
                 } else {
                     newElement.setAttribute(attribute, value);
                 }
             }
 
             for (let childObject of object.children) {
-                let newChildElement = this.objectToElement(childObject);
+                let newChildElement = this.objectToElement(childObject, componentState);
                 newElement.appendChild(newChildElement);
             }
 
             return newElement;
         } else if (object instanceof ComponentObject) {
+            let newComponentState = componentState.getNestedComponentState(object.attributes.key);
+
             // FIXME
             let state = {
                 useState(id, defaultValue) {
@@ -61,8 +101,8 @@ export class ReactInstance {
                 },
             };
 
-            let newObject = object.Component(state, object.attributes, object.children);
-            let newElement = this.objectToElement(newObject);
+            let newObject = object.Component(newComponentState, object.attributes, object.children);
+            let newElement = this.objectToElement(newObject, newComponentState);
 
             newElement.setAttribute("data-component", object.Component.name);
 
@@ -72,6 +112,8 @@ export class ReactInstance {
 
     mount(rootElement) {
         this.rootElement = rootElement;
+        this.rootComponentState = new ComponentState(this);
+
         this.render();
     }
 
@@ -83,9 +125,15 @@ export class ReactInstance {
             children: this.children,
         });
 
-        let newRootElement = this.objectToElement(newRootObject);
+        let newRootElement = this.objectToElement(newRootObject, this.rootComponentState);
 
         this.rootElement.replaceWith(newRootElement);
         this.rootElement = newRootElement;
+    }
+
+    queueRender() {
+        // Usually, renders are triggered from event handlers.
+        // Let the event handlers run through.
+        setTimeout(() => this.render(), 0);
     }
 }
