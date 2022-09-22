@@ -22,16 +22,38 @@ export class ComponentObject {
     }
 }
 
-// FIXME: Get rid of nested component state if unused in render.
 export class ComponentState {
     constructor(instance) {
         this.instance = instance;
 
+        this.name = null;
+
+        // If this state was accessed during the current render.
+        this.touched = false;
+
         // Map 'key' to 'ComponentState'.
-        this.childComponentState = {};
+        this.childComponentState = new Map;
 
         // Used by 'useState' hook.
         this.state = {};
+    }
+
+    resetTouched() {
+        this.touched = false;
+        for (let [key, state] of Object.entries(this.childComponentState)) {
+            state.resetTouched();
+        }
+    }
+
+    cleanupUnusedChildren() {
+        for (let [key, state] of Object.entries(this.childComponentState)) {
+            if (!state.touched) {
+                console.log(`deleting state: '${key}'`);
+                delete this.childComponentState[key];
+            } else {
+                state.cleanupUnusedChildren();
+            }
+        }
     }
 
     getNestedComponentState(key) {
@@ -39,6 +61,7 @@ export class ComponentState {
             this.childComponentState[key] = new ComponentState(this.instance);
         }
 
+        this.childComponentState[key].touched = true;
         return this.childComponentState[key];
     }
 
@@ -64,7 +87,7 @@ export class ReactInstance {
         this.children = children;
 
         this.rootElement = null;
-        this.rootComponentState = null;
+        this.componentState = null;
     }
 
     objectToElement(object, componentState) {
@@ -93,13 +116,7 @@ export class ReactInstance {
             return newElement;
         } else if (object instanceof ComponentObject) {
             let newComponentState = componentState.getNestedComponentState(object.attributes.key);
-
-            // FIXME
-            let state = {
-                useState(id, defaultValue) {
-                    return [null, null];
-                },
-            };
+            newComponentState.name = object.Component.name;
 
             let newObject = object.Component(newComponentState, object.attributes, object.children);
             let newElement = this.objectToElement(newObject, newComponentState);
@@ -112,7 +129,8 @@ export class ReactInstance {
 
     mount(rootElement) {
         this.rootElement = rootElement;
-        this.rootComponentState = new ComponentState(this);
+
+        this.componentState = new ComponentState(this);
 
         this.render();
     }
@@ -125,7 +143,11 @@ export class ReactInstance {
             children: this.children,
         });
 
-        let newRootElement = this.objectToElement(newRootObject, this.rootComponentState);
+        this.componentState.resetTouched();
+        let newRootElement = this.objectToElement(newRootObject, this.componentState);
+        this.componentState.cleanupUnusedChildren();
+
+        console.log(this.componentState);
 
         this.rootElement.replaceWith(newRootElement);
         this.rootElement = newRootElement;
