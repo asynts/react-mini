@@ -71,6 +71,61 @@ function Conditional(state, attributes, children) {
     });
 }
 
+function TextBox(state, attributes, children) {
+    let [name, setName] = state.useState("text", "");
+
+    function onChange(event) {
+        setName(event.target.value);
+    }
+
+    /*
+    <div>
+        <div>
+            <span>Name:</span>
+            <input value={name} onChange={onChange} />
+        </div>
+        <div>
+            Your name is {name}.
+        </div>
+    </div>
+    */
+    return new HtmlObject({
+        type: "div",
+        body: "",
+        attributes: {},
+        children: [
+            new HtmlObject({
+                type: "div",
+                body: "",
+                attributes: {},
+                children: [
+                    new HtmlObject({
+                        type: "span",
+                        body: "Name:",
+                        attributes: {},
+                        children: [],
+                    }),
+                    new HtmlObject({
+                        type: "input",
+                        body: "",
+                        attributes: {
+                            value: name,
+                            $onChange: onChange,
+                        },
+                        children: [],
+                    }),
+                ],
+            }),
+            new HtmlObject({
+                type: "div",
+                body: `Your name is ${name}.`,
+                attributes: {},
+                children: [],
+            }),
+        ],
+    });
+}
+
 function Root(state, attributes, children) {
     /*
     <div>
@@ -78,6 +133,7 @@ function Root(state, attributes, children) {
             <Counter key="1" />
             <Counter key="2" />
         </Conditional>
+        <TextBox />
     </div>
     */
     return new HtmlObject({
@@ -109,6 +165,12 @@ function Root(state, attributes, children) {
                         children: [],
                     }),        
                 ],
+            }),
+            new ComponentObject({
+                Component: TextBox,
+                body: "",
+                attributes: {},
+                children: [],
             }),
         ],
     });

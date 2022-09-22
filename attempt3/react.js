@@ -100,6 +100,8 @@ export class ReactInstance {
                 if (attribute.startsWith("$")) {
                     if (attribute === "$onClick") {
                         newElement.addEventListener("click", value);
+                    } else if (attribute === "$onChange") {
+                        newElement.addEventListener("input", value);
                     } else {
                         throw new Error("Assertion failed");
                     }
