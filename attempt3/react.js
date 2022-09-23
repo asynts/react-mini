@@ -18,6 +18,33 @@ export class HtmlObject {
         this.attributes = attributes;
         this.children = children;
     }
+
+    toElement(parentComponent) {
+        let newElement = document.createElement(newObject.type);
+
+        newElement.innerText = newObject.body;
+
+        for (let [attribute, value] of Object.entries(object.attributes)) {
+            if (attribute.startsWith("$")) {
+                if (attribute === "$onClick") {
+                    newElement.addEventListener("click", value);
+                } else if (attribute === "$onChange") {
+                    newElement.addEventListener("input", value);
+                } else {
+                    throw new Error("Assertion failed");
+                }
+            } else {
+                newElement.setAttribute(attribute, value);
+            }
+        }
+
+        for (let childObject of object.children) {
+            // FIXME: I need to extract this logic to be able to call it recursively.
+            //        The logic should go into 'HtmlObject' and 'ComponentObject' respectively.
+        }
+
+        return newElement;
+    }
 }
 
 export class ComponentObject {
@@ -30,14 +57,22 @@ export class ComponentObject {
         this.attributes = attributes;
         this.children = children;
     }
+
+    toElement(parentComponent) {
+        let key = this.attributes.key;
+        ASSERT(key !== undefined);
+
+        if (parentComponent.childComponents[key] === undefined) {
+            parentComponent.childComponents[key] = new Component(this);
+        }
+
+        return parentComponent.childComponents[key].toElement();
+    }
 }
 
 export class Component {
-    constructor({ Component, body, attributes, children }) {
-        this.Component = Component;
-        this.body = body;
-        this.attributes = attributes;
-        this.children = children;
+    constructor(object) {
+        this.object = object;
 
         // Reference to rendered element if exists.
         this.element = null;
@@ -107,53 +142,7 @@ export class Component {
 
     toElement() {
         let newObject = this.Component(this, this.attributes, this.children);
-
-        if (newObject instanceof ComponentObject) {
-            // The component is essentially just an alias for another component.
-
-            let key = newObject.attributes.key;
-            ASSERT(key !== undefined);
-
-            if (this.childComponents[key] === undefined) {
-                this.childComponents[key] = new Component({
-                    Component: newObject.Component,
-                    body: newObject.body,
-                    attributes: newObject.attributes,
-                    children: newObject.children,
-                });
-            }
-
-            return this.childComponents[key].toElement();
-        } else if (newObject instanceof HtmlObject) {
-            // The component is made up from HTML elements and possibly contains other components.
-
-            let newElement = document.createElement(newObject.type);
-
-            newElement.innerText = newObject.body;
-
-            for (let [attribute, value] of Object.entries(object.attributes)) {
-                if (attribute.startsWith("$")) {
-                    if (attribute === "$onClick") {
-                        newElement.addEventListener("click", value);
-                    } else if (attribute === "$onChange") {
-                        newElement.addEventListener("input", value);
-                    } else {
-                        throw new Error("Assertion failed");
-                    }
-                } else {
-                    newElement.setAttribute(attribute, value);
-                }
-            }
-
-            for (let childObject of object.children) {
-                // FIXME: I need to extract this logic to be able to call it recursively.
-                //        The logic should go into 'HtmlObject' and 'ComponentObject' respectively.
-            }
-
-            return newElement;
-        } else {
-            ASSERT_NOT_REACHED();
-        }
+        return newObject.toElement(this);
     }
 
     resetChildrenTouched() {
@@ -179,7 +168,7 @@ export class Component {
         this.touched = true;
 
         this.resetChildrenTouched();
-        let newElement = this.toElement();
+        let newElement = this.object.toElement(this);
         this.cleanupUnusedChildren();
 
         this.element.replaceWith(newElement);
@@ -188,26 +177,18 @@ export class Component {
 }
 
 export class ReactInstance {
-    constructor({ RootComponent, body, attributes, children }) {
-        this.RootComponent = RootComponent;
-        this.body = body;
-        this.attributes = attributes;
-        this.children = children;
+    constructor(object) {
+        this.object = object;
 
         this.rootElement = null;
         this.rootComponent = null;
     }
 
     mount(rootElement) {
+        ASSERT(this.rootComponent === null);
         this.rootElement = rootElement;
 
-        this.rootComponent = new Component({
-            Component: this.RootComponent,
-            body: this.body,
-            attributes: this.attributes,
-            children: this.children,
-        });
-
+        this.rootComponent = new Component(this.object);
         this.rootComponent.queueRender();
     }
 }

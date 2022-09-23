@@ -4,8 +4,8 @@ import {
     ReactInstance,
 } from "./react.js"
 
-function Counter(state, attributes, children) {
-    let [counter, setCounter] = state.useState("counter", 0);
+function Counter(component, attributes, children) {
+    let [counter, setCounter] = component.useState("counter", 0);
 
     function onClick(event) {
         setCounter(counter + 1);
@@ -40,8 +40,8 @@ function Counter(state, attributes, children) {
     });
 }
 
-function Conditional(state, attributes, children) {
-    let [isVisible, setIsVisible] = state.useState("isVisible", true);
+function Conditional(component, attributes, children) {
+    let [isVisible, setIsVisible] = component.useState("isVisible", true);
 
     function onClick(event) {
         setIsVisible(!isVisible);
@@ -71,8 +71,8 @@ function Conditional(state, attributes, children) {
     });
 }
 
-function TextBox(state, attributes, children) {
-    let [name, setName] = state.useState("text", "");
+function TextBox(component, attributes, children) {
+    let [name, setName] = component.useState("text", "");
 
     function onChange(event) {
         setName(event.target.value);
@@ -126,14 +126,14 @@ function TextBox(state, attributes, children) {
     });
 }
 
-function Root(state, attributes, children) {
+function Root(component, attributes, children) {
     /*
     <div>
         <Conditional key="1">
             <Counter key="1" />
             <Counter key="2" />
         </Conditional>
-        <TextBox />
+        <TextBox key="2" />
     </div>
     */
     return new HtmlObject({
@@ -169,7 +169,9 @@ function Root(state, attributes, children) {
             new ComponentObject({
                 Component: TextBox,
                 body: "",
-                attributes: {},
+                attributes: {
+                    key: "2",
+                },
                 children: [],
             }),
         ],
@@ -179,12 +181,13 @@ function Root(state, attributes, children) {
 /*
 <Root key="1" />
 */
-let instance = new ReactInstance({
-    RootComponent: Root,
+let instance = new ReactInstance(new ComponentObject({
+    Component: Root,
+    body: "",
     attributes: {
         key: "1",
     },
     children: [],
-});
+}));
 
 instance.mount(document.getElementById("root"));
