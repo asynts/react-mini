@@ -1,3 +1,13 @@
+function ASSERT_NOT_REACHED() {
+    throw new Error("ASSERT_NOT_REACHED");
+}
+
+function ASSERT(condition) {
+    if (!condition) {
+        throw new Error("ASSERT");
+    }
+}
+
 export class HtmlObject {
     // The body is first assigned to 'innerText' and then the children are added.
     // If the body is 'null', that step is skipped.
@@ -22,74 +32,40 @@ export class ComponentObject {
     }
 }
 
-export class ComponentState {
-    constructor(instance) {
-        this.instance = instance;
-
-        this.name = null;
-
-        // If this state was accessed during the current render.
-        this.touched = false;
-
-        // Map 'key' to 'ComponentState'.
-        this.childComponentState = new Map;
-
-        // Used by 'useState' hook.
-        this.state = {};
-    }
-
-    resetTouched() {
-        this.touched = false;
-        for (let [key, state] of Object.entries(this.childComponentState)) {
-            state.resetTouched();
-        }
-    }
-
-    cleanupUnusedChildren() {
-        for (let [key, state] of Object.entries(this.childComponentState)) {
-            if (!state.touched) {
-                console.log(`deleting state: '${key}'`);
-                delete this.childComponentState[key];
-            } else {
-                state.cleanupUnusedChildren();
-            }
-        }
-    }
-
-    getNestedComponentState(key) {
-        if (this.childComponentState[key] === undefined) {
-            this.childComponentState[key] = new ComponentState(this.instance);
-        }
-
-        this.childComponentState[key].touched = true;
-        return this.childComponentState[key];
-    }
-
-    useState(id, defaultValue) {
-        if (this.state[id] === undefined) {
-            this.state[id] = defaultValue;
-        }
-
-        function setValue(newValue) {
-            this.state[id] = newValue;
-            this.instance.queueRender();
-        }
-
-        return [this.state[id], setValue.bind(this)];
-    }
-}
-
-export class ReactInstance {
-    constructor({ RootComponent, body, attributes, children }) {
-        this.RootComponent = RootComponent;
+export class Component {
+    constructor({ Component, body, attributes, children }) {
+        this.Component = Component;
         this.body = body;
         this.attributes = attributes;
         this.children = children;
 
-        this.rootElement = null;
-        this.componentState = null;
+        // Reference to rendered element if exists.
+        this.element = null;
+
+        // If this component was accessed during the current render cycle.
+        this.touched = false;
+
+        // Used to keep track of nested component, indexed by 'key' attribute.
+        this.childComponents = new Map;
+
+        // Used to keep track of state for 'useState' hook.
+        this.state = new Map;
     }
 
+    useState(key, defaultValue) {
+        if (this.state[key] === undefined) {
+            this.state[key] = defaultValue;
+        }
+
+        function setValue(newValue) {
+            this.state[key] = newValue;
+            this.queueRender();
+        }
+
+        return [this.state[key], setValue.bind(this)];
+    }
+
+    // FIXME: Remove
     objectToElement(object, componentState) {
         if (object instanceof HtmlObject) {
             let newElement = document.createElement(object.type);
@@ -129,35 +105,109 @@ export class ReactInstance {
         }
     }
 
-    mount(rootElement) {
-        this.rootElement = rootElement;
+    toElement() {
+        let newObject = this.Component(this, this.attributes, this.children);
 
-        this.componentState = new ComponentState(this);
+        if (newObject instanceof ComponentObject) {
+            // The component is essentially just an alias for another component.
 
-        this.render();
+            let key = newObject.attributes.key;
+            ASSERT(key !== undefined);
+
+            if (this.childComponents[key] === undefined) {
+                this.childComponents[key] = new Component({
+                    Component: newObject.Component,
+                    body: newObject.body,
+                    attributes: newObject.attributes,
+                    children: newObject.children,
+                });
+            }
+
+            return this.childComponents[key].toElement();
+        } else if (newObject instanceof HtmlObject) {
+            // The component is made up from HTML elements and possibly contains other components.
+
+            let newElement = document.createElement(newObject.type);
+
+            newElement.innerText = newObject.body;
+
+            for (let [attribute, value] of Object.entries(object.attributes)) {
+                if (attribute.startsWith("$")) {
+                    if (attribute === "$onClick") {
+                        newElement.addEventListener("click", value);
+                    } else if (attribute === "$onChange") {
+                        newElement.addEventListener("input", value);
+                    } else {
+                        throw new Error("Assertion failed");
+                    }
+                } else {
+                    newElement.setAttribute(attribute, value);
+                }
+            }
+
+            for (let childObject of object.children) {
+                // FIXME: I need to extract this logic to be able to call it recursively.
+                //        The logic should go into 'HtmlObject' and 'ComponentObject' respectively.
+            }
+
+            return newElement;
+        } else {
+            ASSERT_NOT_REACHED();
+        }
+    }
+
+    resetChildrenTouched() {
+        for (let childComponent of Object.values(this.childComponents)) {
+            childComponent.touched = false;
+        }
+    }
+
+    cleanupUntouchedChildren() {
+        for (let [key, childComponent] of Object.entries(this.childComponents)) {
+            if (!childComponent.touched) {
+                this.childComponents.delete(key);
+            }
+        }
+    }
+
+    queueRender() {
+        setTimeout(() => this.render(), 0);
     }
 
     render() {
-        let newRootObject = new ComponentObject({
+        // This component was accessed.
+        this.touched = true;
+
+        this.resetChildrenTouched();
+        let newElement = this.toElement();
+        this.cleanupUnusedChildren();
+
+        this.element.replaceWith(newElement);
+        this.element = newElement;
+    }
+}
+
+export class ReactInstance {
+    constructor({ RootComponent, body, attributes, children }) {
+        this.RootComponent = RootComponent;
+        this.body = body;
+        this.attributes = attributes;
+        this.children = children;
+
+        this.rootElement = null;
+        this.rootComponent = null;
+    }
+
+    mount(rootElement) {
+        this.rootElement = rootElement;
+
+        this.rootComponent = new Component({
             Component: this.RootComponent,
             body: this.body,
             attributes: this.attributes,
             children: this.children,
         });
 
-        this.componentState.resetTouched();
-        let newRootElement = this.objectToElement(newRootObject, this.componentState);
-        this.componentState.cleanupUnusedChildren();
-
-        console.log(this.componentState);
-
-        this.rootElement.replaceWith(newRootElement);
-        this.rootElement = newRootElement;
-    }
-
-    queueRender() {
-        // Usually, renders are triggered from event handlers.
-        // Let the event handlers run through.
-        setTimeout(() => this.render(), 0);
+        this.rootComponent.queueRender();
     }
 }
