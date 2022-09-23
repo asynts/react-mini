@@ -39,8 +39,7 @@ export class HtmlObject {
         }
 
         for (let childObject of object.children) {
-            // FIXME: I need to extract this logic to be able to call it recursively.
-            //        The logic should go into 'HtmlObject' and 'ComponentObject' respectively.
+            newElement.appendChild(childObject.toElement(this));
         }
 
         return newElement;
@@ -98,46 +97,6 @@ export class Component {
         }
 
         return [this.state[key], setValue.bind(this)];
-    }
-
-    // FIXME: Remove
-    objectToElement(object, componentState) {
-        if (object instanceof HtmlObject) {
-            let newElement = document.createElement(object.type);
-            
-            newElement.innerText = object.body;
-
-            for (let [attribute, value] of Object.entries(object.attributes)) {
-                if (attribute.startsWith("$")) {
-                    if (attribute === "$onClick") {
-                        newElement.addEventListener("click", value);
-                    } else if (attribute === "$onChange") {
-                        newElement.addEventListener("input", value);
-                    } else {
-                        throw new Error("Assertion failed");
-                    }
-                } else {
-                    newElement.setAttribute(attribute, value);
-                }
-            }
-
-            for (let childObject of object.children) {
-                let newChildElement = this.objectToElement(childObject, componentState);
-                newElement.appendChild(newChildElement);
-            }
-
-            return newElement;
-        } else if (object instanceof ComponentObject) {
-            let newComponentState = componentState.getNestedComponentState(object.attributes.key);
-            newComponentState.name = object.Component.name;
-
-            let newObject = object.Component(newComponentState, object.attributes, object.children);
-            let newElement = this.objectToElement(newObject, newComponentState);
-
-            newElement.setAttribute("data-component", object.Component.name);
-
-            return newElement;
-        }
     }
 
     toElement() {
