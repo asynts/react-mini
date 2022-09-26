@@ -63,11 +63,11 @@ export class ComponentObject {
         let key = this.attributes.key;
         ASSERT(key !== undefined);
 
-        if (parentComponent.childComponents[key] === undefined) {
-            parentComponent.childComponents[key] = new Component(this);
+        if (parentComponent.childComponents.get(key) === undefined) {
+            parentComponent.childComponents.set(key, new Component(this));
         }
 
-        return parentComponent.childComponents[key].toElement();
+        return parentComponent.childComponents.get(key).toElement();
     }
 }
 
@@ -79,7 +79,7 @@ export class Component {
         this.element = null;
 
         // If this component was accessed during the current render cycle.
-        this.touched = false;
+        this.touched = true;
 
         // Used to keep track of nested component, indexed by 'key' attribute.
         this.childComponents = new Map;
@@ -89,21 +89,25 @@ export class Component {
     }
 
     useState(key, defaultValue) {
-        if (this.state[key] === undefined) {
-            this.state[key] = defaultValue;
+        if (this.state.get(key) === undefined) {
+            this.state.set(key, defaultValue);
         }
 
         function setValue(newValue) {
-            this.state[key] = newValue;
+            this.state.set(key, newValue);
             this.queueRender();
         }
 
-        return [this.state[key], setValue.bind(this)];
+        return [this.state.get(key), setValue.bind(this)];
     }
 
     toElement() {
         let newObject = this.object.Component(this, this.object.attributes, this.object.children);
-        return newObject.toElement(this);
+        let newElement = newObject.toElement(this);
+
+        this.element = newElement;
+
+        return newElement;
     }
 
     resetChildrenTouched() {

@@ -191,3 +191,5 @@ let instance = new ReactInstance(new ComponentObject({
 }));
 
 instance.mount(document.getElementById("root"));
+
+window.instance = instance;
