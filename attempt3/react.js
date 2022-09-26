@@ -20,11 +20,11 @@ export class HtmlObject {
     }
 
     toElement(parentComponent) {
-        let newElement = document.createElement(newObject.type);
+        let newElement = document.createElement(this.type);
 
-        newElement.innerText = newObject.body;
+        newElement.innerText = this.body;
 
-        for (let [attribute, value] of Object.entries(object.attributes)) {
+        for (let [attribute, value] of Object.entries(this.attributes)) {
             if (attribute.startsWith("$")) {
                 if (attribute === "$onClick") {
                     newElement.addEventListener("click", value);
@@ -38,8 +38,10 @@ export class HtmlObject {
             }
         }
 
-        for (let childObject of object.children) {
-            newElement.appendChild(childObject.toElement(this));
+        for (let childObject of this.children) {
+            // We do not create a new component here.
+            // It is not required for HTML children and the components will create it themselves.
+            newElement.appendChild(childObject.toElement(parentComponent));
         }
 
         return newElement;
@@ -100,7 +102,7 @@ export class Component {
     }
 
     toElement() {
-        let newObject = this.Component(this, this.attributes, this.children);
+        let newObject = this.object.Component(this, this.object.attributes, this.object.children);
         return newObject.toElement(this);
     }
 
@@ -128,7 +130,7 @@ export class Component {
 
         this.resetChildrenTouched();
         let newElement = this.object.toElement(this);
-        this.cleanupUnusedChildren();
+        this.cleanupUntouchedChildren();
 
         this.element.replaceWith(newElement);
         this.element = newElement;
@@ -139,15 +141,15 @@ export class ReactInstance {
     constructor(object) {
         this.object = object;
 
-        this.rootElement = null;
         this.rootComponent = null;
     }
 
     mount(rootElement) {
         ASSERT(this.rootComponent === null);
-        this.rootElement = rootElement;
 
         this.rootComponent = new Component(this.object);
+        this.rootComponent.element = rootElement;
+
         this.rootComponent.queueRender();
     }
 }
