@@ -5,6 +5,8 @@ import {
 } from "./react.js"
 
 function Counter(component, attributes, children) {
+    console.log("Counter()");
+
     let [counter, setCounter] = component.useState("counter", 0);
 
     function onClick(event) {
@@ -179,10 +181,10 @@ function Root(component, attributes, children) {
 }
 
 /*
-<Root key="1" />
+<Counter key="1" />
 */
 let instance = new ReactInstance(new ComponentObject({
-    Component: Root,
+    Component: Counter,
     body: "",
     attributes: {
         key: "1",

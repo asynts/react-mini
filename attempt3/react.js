@@ -20,6 +20,8 @@ export class HtmlObject {
     }
 
     toElement(parentComponent) {
+        console.log("HtmlObject.toElement()");
+
         let newElement = document.createElement(this.type);
 
         newElement.innerText = this.body;
@@ -60,6 +62,8 @@ export class ComponentObject {
     }
 
     toElement(parentComponent) {
+        console.log("ComponentObject.toElement()");
+
         let key = this.attributes.key;
         ASSERT(key !== undefined);
 
@@ -73,6 +77,8 @@ export class ComponentObject {
 
 export class Component {
     constructor(object) {
+        console.log("new Component()");
+
         this.object = object;
 
         // Reference to rendered element if exists.
@@ -101,11 +107,11 @@ export class Component {
         return [this.state.get(key), setValue.bind(this)];
     }
 
-    toElement() {
+    _toElement() {
+        console.log("Component._toElement()");
+
         let newObject = this.object.Component(this, this.object.attributes, this.object.children);
         let newElement = newObject.toElement(this);
-
-        this.element = newElement;
 
         return newElement;
     }
@@ -125,17 +131,22 @@ export class Component {
     }
 
     queueRender() {
+        console.log("Component.queueRender()");
+
         setTimeout(() => this.render(), 0);
     }
 
     render() {
+        console.log("Component.render()");
+
         // This component was accessed.
         this.touched = true;
 
         this.resetChildrenTouched();
-        let newElement = this.object.toElement(this);
+        let newElement = this._toElement();
         this.cleanupUntouchedChildren();
 
+        console.log(this.element, newElement);
         this.element.replaceWith(newElement);
         this.element = newElement;
     }
@@ -143,6 +154,8 @@ export class Component {
 
 export class ReactInstance {
     constructor(object) {
+        console.log("new ReactInstance()");
+
         this.object = object;
 
         this.rootComponent = null;
