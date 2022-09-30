@@ -42,6 +42,22 @@ function Counter(component, attributes, children) {
     });
 }
 
+function Wrapper(component, attributes, children) {
+    console.log("Wrapper()");
+
+    /*
+    <Counter key="1" />
+    */
+    return new ComponentObject({
+        Component: Counter,
+        body: "",
+        attributes: {
+            key: "1",
+        },
+        children: [],
+    });
+}
+
 function Conditional(component, attributes, children) {
     let [isVisible, setIsVisible] = component.useState("isVisible", true);
 
@@ -181,10 +197,10 @@ function Root(component, attributes, children) {
 }
 
 /*
-<Counter key="1" />
+<Wrapper key="1" />
 */
 let instance = new ReactInstance(new ComponentObject({
-    Component: Counter,
+    Component: Wrapper,
     body: "",
     attributes: {
         key: "1",

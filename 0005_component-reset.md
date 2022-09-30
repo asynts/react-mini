@@ -2,8 +2,11 @@ If we have nested components, the reconciliation fails and we create a new compo
 
 ### Notes
 
--   I've tried only rendering the counter component directly.
-    I am tracing the important function calls.
+-   I've tried only rendering the counter component directly:
+
+    ```none
+    <Counter />
+    ```
 
     I would expect the following output:
 
@@ -34,6 +37,52 @@ If we have nested components, the reconciliation fails and we create a new compo
     ```
 
     This works as expected.
+
+-   Now I am trying to wrap this in another component:
+
+    ```none
+    <Wrapper />
+
+    function Wrapper() {
+        return <Counter />;
+    }
+    ```
+
+    Expected output:
+
+    ```none
+    new ReactInstance()
+    new Component()
+    Component.queueRender()
+    Component.render()
+    Component._toElement()
+    Wrapper()
+    new ComponentObject()
+    ComponentObject.toElement()
+    ```
+
+    Actual output:
+
+    ```none
+    react.js:60 new ComponentObject()
+    react.js:161 new ReactInstance()
+    react.js:84 new Component()
+    react.js:138 Component.queueRender()
+    react.js:144 Component.render()
+    react.js:115 Component._toElement()
+    index.js:46 Wrapper()
+    react.js:60 new ComponentObject()
+    react.js:69 ComponentObject.toElement()
+    react.js:84 new Component()
+    react.js:78 Uncaught TypeError: parentComponent.childComponents.get(...).toElement is not a function
+        at ComponentObject.toElement (react.js:78:57)
+        at Component._toElement (react.js:118:36)
+        at Component.render (react.js:150:31)
+        at react.js:140:31
+    ```
+
+    Oops, I completely forgot about the `new Component()` call.
+    On top of that, some error occurs.
 
 ### Ideas
 

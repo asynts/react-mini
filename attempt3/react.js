@@ -13,6 +13,8 @@ export class HtmlObject {
     // If the body is 'null', that step is skipped.
     // Use 'body=""' or 'children=[]'.
     constructor({ type, body, attributes, children }) {
+        console.log("new HtmlObject()");
+
         this.type = type;
         this.body = body;
         this.attributes = attributes;
@@ -55,6 +57,8 @@ export class ComponentObject {
     // If the body is 'null', that step is skipped.
     // Use 'body=""' or 'children=[]'.
     constructor({ Component, body, attributes, children }) {
+        console.log("new ComponentObject()");
+
         this.Component = Component;
         this.body = body;
         this.attributes = attributes;
