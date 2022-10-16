@@ -1,0 +1,5 @@
+[default.extend-words]
+skiped = "skipped"
+
+[files]
+extend-exclude = ["typos.toml"]
