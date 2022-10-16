@@ -1,5 +1,13 @@
 function ASSERT_NOT_REACHED() {
+    debugger;
     throw new Error("ASSERT_NOT_REACHED");
+}
+
+function ASSERT(condition) {
+    if (!conditoin) {
+        debugger;
+        throw new Error("ASSERT");
+    }
 }
 
 /*
@@ -147,6 +155,12 @@ class TextNode extends Node {
 
         this.text = text;
     }
+
+    updateElement(element) {
+        ASSERT(element.nodeName === "#text");
+
+        element.nodeValue = this.text;
+    }
 }
 
 /*
@@ -160,9 +174,38 @@ class HtmlNode extends Node {
     constructor({ nextSibling, elementType, properties, children }) {
         super({ nextSibling });
 
-        this.elementType = elementType;
+        // This is important because this is what 'Element.nodeName' reports.
+        this.elementType = elementType.toUpperCase();
+ 
         this.properties = properties;
         this.children = children;
+    }
+    
+    createElement() {
+        let element = document.createElement(this.elementType);
+        
+        // Set all the attributes.
+        for (let [propertyName, propertyValue] of Object.entries(this.properties)) {
+            element.setAttribute(propertyName, propertyValue);
+        }
+
+        return element;
+    }
+
+    updateElement(element) {
+        ASSERT(element.nodeName === this.elementType);
+
+        // Remove attributes that do not appear in this node.
+        for (let propertyName of Object.keys(element.attributes)) {
+            if (false === propertyName in this.properties) {
+                element.removeAttribute(propertyName);
+            }
+        }
+
+        // Update all attributes to match.
+        for (let [propertyName, propertyValue] of Object.entries(this.properties)) {
+            element.setAttribute(propertyName, propertyValue);
+        }
     }
 }
 
@@ -192,10 +235,15 @@ class Instance {
         // FIXME: I am trying to phrase this in such a way that this can be easily generatlized.
         //        This logic should be extracted out of the 'mount' method.
 
+        // FIXME: This assumes that we are dealing with a 'HtmlNode'.
+
         // There are three types of matches that can occur:
         //
         // -   DIRECT_MATCH means that the node we encounter matches what we expect.
         //     We update the DOM node and then recursively handle child nodes.
+        //
+        //     This happens for everything that doesn't appear in a list.
+        //     The 'SentinelNode' is used to ensure that conditionally rendered elements are a direct match.
         //
         // -   SKIP_MATCH means that the node we encounter doesn't match what we expect.
         //     However, we were able to fast-forward and found a matching sibling.
@@ -203,20 +251,54 @@ class Instance {
         //     We remove the skipped DOM nodes.
         //     We update the DOM node and then recursively handle child nodes.
         //
+        //     This happens if a list of elements is rendered and items are removed or inserted.
+        //
         // -   NO_MATCH means that we were unable to find a matching node.
         //     We insert a new DOM node and then recursively handle child nodes.
+        //
+        //     This happens if something is added to a list and thus didn't exist in the previous render.
+
+        function handle_DIRECT_MATCH() {
+            newNode.updateElement(oldElement);
+
+            for (let child of newNode.children) {
+                // FIXME: Recursion.
+            }
+
+            // FIXME: Update 'oldElement' and 'oldNode'.
+        }
+
+        function handle_SKIP_MATCH() {
+            // FIXME: Remove elements, advancing 'oldElement' and 'oldNode'.
+
+            handle_DIRECT_MATCH();
+        }
+
+        function handle_NO_MATCH() {
+            oldElement.insertBefore(newNode.createElement());
+
+            for (let child of newNode.children) {
+                // FIXME: Recursion.
+            }
+
+            // FIXME: Update 'oldElement' and 'oldNode'.
+        }
 
         if (oldNode.isEqual(newNode)) {
-            // DIRECT_MATCH
+            handle_DIRECT_MATCH();
+            return;
         } else {
+            // Search following siblings for match.
             let oldSiblingNode = oldNode.nextSibling;
             while (oldSiblingNode !== null) {
                 if (oldSiblingNode.isEqual(newNode)) {
-                    // SKIP_MATCH
+                    handle_SKIP_MATCH();
+                    return;
                 }
             }
 
-            // NO_MATCH
+            handle_NO_MATCH();
+            return;
         }
     }
 }
