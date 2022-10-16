@@ -109,6 +109,8 @@ class SentinelNode extends Node {
     constructor({ nextSibling }) {
         this.nextSibling = nextSibling;
     }
+
+    // FIXME
 }
 
 /*
@@ -123,7 +125,9 @@ ComponentNode : Node {
 
     store: Store
 
-    queueRender(): void
+    queueRenderAsync(): void
+
+    render({ oldElement: window.Element, oldNode: ComponentNode }): void
 }
 */
 class ComponentNode extends Node {
@@ -142,11 +146,20 @@ class ComponentNode extends Node {
     async queueRenderAsync() {
         // FIXME
     }
+
+    render({ oldElement, oldNode }) {
+        // FIXME
+    }
 }
 
 /*
 TextNode {
     text: string
+
+    createElement(): window.Element
+    updateElement(window.Element): void
+
+    render({ oldElement: window.Element, oldNode: TextNode }): void
 }
 */
 class TextNode extends Node {
@@ -156,10 +169,18 @@ class TextNode extends Node {
         this.text = text;
     }
 
+    createElement() {
+        return document.createTextNode(this.text);
+    }
+
     updateElement(element) {
         ASSERT(element.nodeName === "#text");
 
         element.nodeValue = this.text;
+    }
+
+    render({ oldElement, oldNode }) {
+        // This node does not have any children to worry about.
     }
 }
 
@@ -168,6 +189,11 @@ HtmlNode : Node {
     elementType: string
     properties: map[string, object]
     children: list[Node]
+
+    createElement(): window.Element
+    updateElement(window.Element): void
+
+    render({ oldElement: window.Element, oldNode: HtmlNode }): void
 }
 */
 class HtmlNode extends Node {
@@ -207,36 +233,8 @@ class HtmlNode extends Node {
             element.setAttribute(propertyName, propertyValue);
         }
     }
-}
 
-/*
-Instance {
-    currentRootNode: Node?
-
-    mount(targetElement: window.Element, node: Node): void
-}
-*/
-class Instance {
-    constructor() {
-
-    }
-
-    mount(markerTargetElement, newNode) {
-        // We want the root element to be in a well defined state.
-        let oldElement = document.createElement("div");
-        markerTargetElement.replaceWith(oldElement);
-
-        let oldNode = new HtmlNode({
-            elementType: "div",
-            properties: {},
-            children: [],
-        });
-
-        // FIXME: I am trying to phrase this in such a way that this can be easily generatlized.
-        //        This logic should be extracted out of the 'mount' method.
-
-        // FIXME: This assumes that we are dealing with a 'HtmlNode'.
-
+    render({ oldElement, oldNode }) {
         // There are three types of matches that can occur:
         //
         // -   DIRECT_MATCH means that the node we encounter matches what we expect.
@@ -262,10 +260,14 @@ class Instance {
             newNode.updateElement(oldElement);
 
             for (let child of newNode.children) {
+                // FIXME: Honestly, I got no clue what I need to do here.
+                //        I should get out a piece of paper and figure it out.
+
                 // FIXME: Recursion.
             }
 
-            // FIXME: Update 'oldElement' and 'oldNode'.
+            oldElement = oldElement.nextSibling;
+            oldNode = oldNode.nextSibling;
         }
 
         function handle_SKIP_MATCH() {
@@ -281,24 +283,56 @@ class Instance {
                 // FIXME: Recursion.
             }
 
-            // FIXME: Update 'oldElement' and 'oldNode'.
+            oldElement = oldElement;
+            oldNode = oldNode;
         }
 
         if (oldNode.isEqual(newNode)) {
             handle_DIRECT_MATCH();
-            return;
         } else {
             // Search following siblings for match.
             let oldSiblingNode = oldNode.nextSibling;
             while (oldSiblingNode !== null) {
                 if (oldSiblingNode.isEqual(newNode)) {
                     handle_SKIP_MATCH();
-                    return;
+                    break;
                 }
             }
 
-            handle_NO_MATCH();
-            return;
+            if (oldSiblingNode === null) {
+                handle_NO_MATCH();
+            }
         }
+
+        // FIXME
+    }
+}
+
+/*
+Instance {
+    currentRootNode: Node?
+
+    mount(targetElement: window.Element, node: Node): void
+}
+*/
+class Instance {
+    constructor() {
+
+    }
+
+    mount(markerTargetElement, newNode) {
+        // We want the root element to be in a well defined state.
+        let oldElement = document.createElement("div");
+        markerTargetElement.replaceWith(oldElement);
+
+        let oldNode = new HtmlNode({
+            elementType: "div",
+            properties: {},
+            children: [],
+        });
+
+        // FIXME: At some point, we need to construct the nodes that are used by the next render.
+
+        newNode.render({ oldElement, oldNode });
     }
 }
