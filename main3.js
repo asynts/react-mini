@@ -399,6 +399,16 @@ class Instance {
 
         // Trigger a re-render shortly after for testing.
         setTimeout(() => {
+            /*
+            <div key="root">
+                <p key="1">
+                    <text>Hello, world!</text>
+                    <span key="2" style="font-weight: bold;">
+                        <text>This text was updated!</text>
+                    </span>
+                </p>
+            </div>
+            */
             let updatedNode = new HtmlNode({
                 elementType: "div",
                 properties: {
@@ -412,7 +422,19 @@ class Instance {
                         },
                         children: [
                             new TextNode({
-                                text: "This was updated!",
+                                text: "Hello, world!",
+                            }),
+                            new HtmlNode({
+                                elementType: "span",
+                                properties: {
+                                    key: "2",
+                                    style: "font-weight: bold;",
+                                },
+                                children: [
+                                    new TextNode({
+                                        text: "This text was updated!",
+                                    }),
+                                ],
                             }),
                         ],
                     }),
