@@ -46,14 +46,10 @@ class Node {
             return false;
         }
 
-        // The key attribute must match.
-        if (this.properties.key !== otherNode.properties.key) {
-            return false;
-        }
-
         switch(this.constructor) {
             case HtmlNode:
-                return this.elementType === otherNode.elementType;
+                return this.properties.key === otherNode.properties.key
+                    && this.elementType === otherNode.elementType;
             case TextNode:
                 return true;
             
@@ -384,11 +380,14 @@ class Instance {
     mount(markerTargetElement, newNode) {
         // We want the root element to be in a well defined state.
         let oldElement = document.createElement("div");
+        oldElement.setAttribute("key", "root");
         markerTargetElement.replaceWith(oldElement);
 
         let oldNode = new HtmlNode({
             elementType: "div",
-            properties: {},
+            properties: {
+                key: "root",
+            },
             children: [],
             renderedElement: oldElement,
         });
@@ -397,19 +396,61 @@ class Instance {
             oldNode,
             parentElement: null,
         });
+
+        // Trigger a re-render shortly after for testing.
+        setTimeout(() => {
+            let updatedNode = new HtmlNode({
+                elementType: "div",
+                properties: {
+                    key: "root",
+                },
+                children: [
+                    new HtmlNode({
+                        elementType: "p",
+                        properties: {
+                            key: "1",
+                        },
+                        children: [
+                            new TextNode({
+                                text: "This was updated!",
+                            }),
+                        ],
+                    }),
+                ],
+            });
+
+            updatedNode.render({
+                oldNode: newNode,
+                parentElement: null,
+            });
+        }, 500);
     }
 }
 
 new Instance()
     .mount(
         document.getElementById("root"),
+        /*
+        <div key="root">
+            <p key="1">
+                <text>Hello, world!</text>
+                <span key="2" style="font-weight: bold;">
+                    <text>This is bold!</text>
+                </span>
+            </p>
+        </div>
+        */
         new HtmlNode({
             elementType: "div",
-            properties: {},
+            properties: {
+                key: "root",
+            },
             children: [
                 new HtmlNode({
                     elementType: "p",
-                    properties: {},
+                    properties: {
+                        key: "1",
+                    },
                     children: [
                         new TextNode({
                             text: "Hello, world!",
@@ -417,6 +458,7 @@ new Instance()
                         new HtmlNode({
                             elementType: "span",
                             properties: {
+                                key: "2",
                                 style: "font-weight: bold;",
                             },
                             children: [
