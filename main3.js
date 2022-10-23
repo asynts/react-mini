@@ -23,7 +23,7 @@ Node {
     abstract removeElement(): void
 
     abstract renderChildren(oldFirstChild: Node): void
-    render(oldNode: Node): Node
+    render(oldNode: Node, parentElement: window.Element): Node
 }
 */
 class Node {
@@ -89,8 +89,8 @@ class Node {
     // The caller can either be 'Instance.mount' the 'setValue' function in 'useState'.
     //
     // Returns the next node that should be passed to the next new sibling.
-    render({ oldNode }) {
-        // There are three types of matches that can occur:
+    render({ oldNode, parentElement }) {
+        // There are four types of matches that can occur:
         //
         // -   DIRECT_MATCH means that the node we encounter matches what we expect.
         //     We update the DOM node and then recursively handle child nodes.
@@ -110,6 +110,12 @@ class Node {
         //     We insert a new DOM node and then recursively handle child nodes.
         //
         //     This happens if something is added to a list and thus didn't exist in the previous render.
+        //
+        // -   NO_MATCH_NEW occurs when we were unable to find a matching node and we don't even have a candidate.
+        //     We append a new DOM node to the parent and recursively handle child nodes.
+        //
+        //     This happens if a node is rendered for the first time.
+        //     It doesn't happen for the root node because we create a fake element for that.
 
         let handle_DIRECT_MATCH = () => {
             this.updateElement({ oldRenderedElement: oldNode.renderedElement });
@@ -151,8 +157,21 @@ class Node {
             return oldNode;
         };
 
+        let handle_NO_MATCH_NEW = () => {
+            // We do not have an 'oldNode' that we can use as an insertion point.
+            // This only happens if the 'parentNode' was newly created.
+            //
+            // FIXME: Verify that this is the only case where this can happen.
+
+            parentElement.appendChild(this.createElement());
+
+            this.renderChildren({ oldFirstChild: null });
+
+            return oldNode;
+        };
+
         if (oldNode === null) {
-            return handle_NO_MATCH();
+            return handle_NO_MATCH_NEW();
         } else if (this.isEqual(oldNode)) {
             return handle_DIRECT_MATCH();
         } else {
@@ -294,7 +313,7 @@ class HtmlNode extends Node {
         // Set all the attributes.
         for (let [propertyName, propertyValue] of Object.entries(this.properties)) {
             ASSERT(typeof propertyValue === "string" || propertyValue instanceof String);
-            renderedElement.setAttribute(propertyName, propertyValue);
+            this.renderedElement.setAttribute(propertyName, propertyValue);
         }
 
         return this.renderedElement;
@@ -326,19 +345,33 @@ class HtmlNode extends Node {
     }
 
     renderChildren({ oldFirstChild }) {
-        // FIXME: This can pass 'oldNode=null' to 'render'.
-        //        I don't think that method can handle it, because we use 'insertBefore'.
-
-        // Update each child and advance which old child is referenced.
-        for (let child of this.children) {
-            oldFirstChild = child.render({ oldNode: oldFirstChild });
-        }
+        let lastExistingChild = oldFirstChild;
 
         // Remove trailing nodes that no longer exist.
-        while (oldFirstChild !== null) {
-            oldFirstChild.removeElement();
-            oldFirstChild = oldFirstChild.nextSibling;
+        let removeRemainingElements = () => {
+            // FIXME: This doesn't work because we already iterated through it.
+            while (lastExistingChild !== null) {
+                lastExistingChild.removeElement();
+                lastExistingChild = lastExistingChild.nextSibling;
+            }    
+        };
+
+        // Render the children.
+        for (let child of this.children) {
+            // This ensures that if we call 'Node.render' with 'oldNode=null', there are no children coming after.
+            if (oldFirstChild === null) {
+                removeRemainingElements();
+            } else {
+                lastExistingChild = oldFirstChild;
+            }
+
+            oldFirstChild = child.render({
+                oldNode: oldFirstChild,
+                parentElement: this.renderedElement,
+            });
         }
+
+        removeRemainingElements();
     }
 }
 
@@ -360,7 +393,10 @@ class Instance {
             renderedElement: oldElement,
         });
 
-        newNode.render({ oldNode });
+        newNode.render({
+            oldNode,
+            parentElement: null,
+        });
     }
 }
 
@@ -377,6 +413,17 @@ new Instance()
                     children: [
                         new TextNode({
                             text: "Hello, world!",
+                        }),
+                        new HtmlNode({
+                            elementType: "span",
+                            properties: {
+                                style: "font-weight: bold;",
+                            },
+                            children: [
+                                new TextNode({
+                                    text: "This is bold!",
+                                }),
+                            ],
                         }),
                     ],
                 }),
