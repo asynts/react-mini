@@ -61,6 +61,8 @@ Node {
     nextSibling: Node?
 
     isEqual(otherNode: Node): boolean
+    renderChildren(oldFirstChild: Node): void
+    render(oldNode: Node): Node
 }
 */
 class Node {
@@ -94,6 +96,78 @@ class Node {
             
             default:
                 ASSERT_NOT_REACHED();
+        }
+    }
+
+    // Is provided with the value of 'Node.children[0]' of the previous render.
+    renderChildren({ oldFirstChild }) {
+        // This is an abstract class that doesn't have children.
+        // Inheriting classes can override this function.
+    }
+
+    // When a change occurs, we provide the 'oldNode' that existed before the change.
+    // We can use this to obtain the 'renderedElement' and assume that the element matches what the node describes.
+    //
+    // The caller can either be 'Instance.mount' the 'setValue' function in 'useState'.
+    //
+    // Returns the next node that should be passed to the next new sibling.
+    render({ oldNode }) {
+        // There are three types of matches that can occur:
+        //
+        // -   DIRECT_MATCH means that the node we encounter matches what we expect.
+        //     We update the DOM node and then recursively handle child nodes.
+        //
+        //     This happens for everything that doesn't appear in a list.
+        //     The 'SentinelNode' is used to ensure that conditionally rendered elements are a direct match.
+        //
+        // -   SKIP_MATCH means that the node we encounter doesn't match what we expect.
+        //     However, we were able to fast-forward and found a matching sibling.
+        //
+        //     We remove the skipped DOM nodes.
+        //     We update the DOM node and then recursively handle child nodes.
+        //
+        //     This happens if a list of elements is rendered and items are removed or inserted.
+        //
+        // -   NO_MATCH means that we were unable to find a matching node.
+        //     We insert a new DOM node and then recursively handle child nodes.
+        //
+        //     This happens if something is added to a list and thus didn't exist in the previous render.
+
+        function handle_DIRECT_MATCH() {
+            newNode.updateElement();
+
+            this.renderChildren({ oldFirstChild: oldNode.children[0] });
+
+            return oldNode.nextSibling;
+        }
+
+        function handle_SKIP_MATCH() {
+            // FIXME: Remove elements, update 'oldNode'.
+
+            return handle_DIRECT_MATCH();
+        }
+
+        function handle_NO_MATCH() {
+            oldNode.renderedElement.insertBefore(newNode.createElement());
+
+            this.renderChildren({ oldFirstChild: oldNode.children[0] });
+
+            return oldNode;
+        }
+
+        if (oldNode.isEqual(newNode)) {
+            return handle_DIRECT_MATCH();
+        } else {
+            // Search following siblings for match.
+            let oldSiblingNode = oldNode.nextSibling;
+            while (oldSiblingNode !== null) {
+                if (oldSiblingNode.isEqual(newNode)) {
+                    return handle_SKIP_MATCH();
+                }
+            }
+
+            ASSERT(oldSiblingNode !== null);
+            return handle_NO_MATCH();
         }
     }
 }
@@ -156,31 +230,37 @@ class ComponentNode extends Node {
 TextNode {
     text: string
 
+    renderedElement: window.Element?
+
     createElement(): window.Element
     updateElement(window.Element): void
 
-    render({ oldElement: window.Element, oldNode: TextNode }): void
+    render({ oldNode: TextNode }): void
 }
 */
 class TextNode extends Node {
-    constructor({ nextSibling, text }) {
+    constructor({ nextSibling, text, renderedElement }) {
         super({ nextSibling });
 
         this.text = text;
+
+        if (renderedElement === undefined) {
+            this.renderedElement = renderedElement;
+        } else {
+            this.renderedElement = null;
+        }
     }
 
     createElement() {
         return document.createTextNode(this.text);
     }
 
-    updateElement(element) {
+    updateElement() {
+        let element = this.renderedElement;
+
         ASSERT(element.nodeName === "#text");
 
         element.nodeValue = this.text;
-    }
-
-    render({ oldElement, oldNode }) {
-        // This node does not have any children to worry about.
     }
 }
 
@@ -190,6 +270,8 @@ HtmlNode : Node {
     properties: map[string, object]
     children: list[Node]
 
+    renderedElement: window.Element?
+
     createElement(): window.Element
     updateElement(window.Element): void
 
@@ -197,7 +279,7 @@ HtmlNode : Node {
 }
 */
 class HtmlNode extends Node {
-    constructor({ nextSibling, elementType, properties, children }) {
+    constructor({ nextSibling, elementType, properties, children, renderedElement }) {
         super({ nextSibling });
 
         // This is important because this is what 'Element.nodeName' reports.
@@ -205,121 +287,54 @@ class HtmlNode extends Node {
  
         this.properties = properties;
         this.children = children;
+
+        if (renderedElement !== undefined) {
+            this.renderedElement = renderedElement;
+        } else {
+            this.renderedElement = null;
+        }
     }
-    
+
     createElement() {
-        let element = document.createElement(this.elementType);
+        this.renderedElement = document.createElement(this.elementType);
         
         // Set all the attributes.
         for (let [propertyName, propertyValue] of Object.entries(this.properties)) {
-            element.setAttribute(propertyName, propertyValue);
+            // FIXME: Verify that this is a string.
+
+            renderedElement.setAttribute(propertyName, propertyValue);
         }
 
-        return element;
+        return this.renderedElement;
     }
 
-    updateElement(element) {
-        ASSERT(element.nodeName === this.elementType);
+    updateElement() {
+        ASSERT(this.renderedElement.nodeName === this.elementType);
 
         // Remove attributes that do not appear in this node.
         for (let propertyName of Object.keys(element.attributes)) {
             if (false === propertyName in this.properties) {
-                element.removeAttribute(propertyName);
+                this.renderedElement.removeAttribute(propertyName);
             }
         }
 
         // Update all attributes to match.
         for (let [propertyName, propertyValue] of Object.entries(this.properties)) {
-            element.setAttribute(propertyName, propertyValue);
+            this.renderedElement.setAttribute(propertyName, propertyValue);
         }
     }
 
-    render({ oldElement, oldNode }) {
-        // There are three types of matches that can occur:
-        //
-        // -   DIRECT_MATCH means that the node we encounter matches what we expect.
-        //     We update the DOM node and then recursively handle child nodes.
-        //
-        //     This happens for everything that doesn't appear in a list.
-        //     The 'SentinelNode' is used to ensure that conditionally rendered elements are a direct match.
-        //
-        // -   SKIP_MATCH means that the node we encounter doesn't match what we expect.
-        //     However, we were able to fast-forward and found a matching sibling.
-        //
-        //     We remove the skipped DOM nodes.
-        //     We update the DOM node and then recursively handle child nodes.
-        //
-        //     This happens if a list of elements is rendered and items are removed or inserted.
-        //
-        // -   NO_MATCH means that we were unable to find a matching node.
-        //     We insert a new DOM node and then recursively handle child nodes.
-        //
-        //     This happens if something is added to a list and thus didn't exist in the previous render.
-
-        function handle_DIRECT_MATCH() {
-            newNode.updateElement(oldElement);
-
-            for (let child of newNode.children) {
-                // FIXME: Honestly, I got no clue what I need to do here.
-                //        I should get out a piece of paper and figure it out.
-
-                // FIXME: Recursion.
-            }
-
-            oldElement = oldElement.nextSibling;
-            oldNode = oldNode.nextSibling;
-        }
-
-        function handle_SKIP_MATCH() {
-            // FIXME: Remove elements, advancing 'oldElement' and 'oldNode'.
-
-            handle_DIRECT_MATCH();
-        }
-
-        function handle_NO_MATCH() {
-            oldElement.insertBefore(newNode.createElement());
-
-            for (let child of newNode.children) {
-                // FIXME: Recursion.
-            }
-
-            oldElement = oldElement;
-            oldNode = oldNode;
-        }
-
-        if (oldNode.isEqual(newNode)) {
-            handle_DIRECT_MATCH();
-        } else {
-            // Search following siblings for match.
-            let oldSiblingNode = oldNode.nextSibling;
-            while (oldSiblingNode !== null) {
-                if (oldSiblingNode.isEqual(newNode)) {
-                    handle_SKIP_MATCH();
-                    break;
-                }
-            }
-
-            if (oldSiblingNode === null) {
-                handle_NO_MATCH();
-            }
-        }
-
+    renderChildren({ oldFirstChild }) {
         // FIXME
     }
 }
 
 /*
 Instance {
-    currentRootNode: Node?
-
     mount(targetElement: window.Element, node: Node): void
 }
 */
 class Instance {
-    constructor() {
-
-    }
-
     mount(markerTargetElement, newNode) {
         // We want the root element to be in a well defined state.
         let oldElement = document.createElement("div");
@@ -329,10 +344,9 @@ class Instance {
             elementType: "div",
             properties: {},
             children: [],
+            renderedElement: oldElement,
         });
 
-        // FIXME: At some point, we need to construct the nodes that are used by the next render.
-
-        newNode.render({ oldElement, oldNode });
+        newNode.render({ oldNode });
     }
 }
