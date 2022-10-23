@@ -4,53 +4,9 @@ function ASSERT_NOT_REACHED() {
 }
 
 function ASSERT(condition) {
-    if (!conditoin) {
+    if (!condition) {
         debugger;
         throw new Error("ASSERT");
-    }
-}
-
-/*
-// Keeps the state that can be accessed with 'useState'.
-// This instance is shared between the renders.
-// The data inside is mutable.
-//
-// The index of 'useState' chooses, which data element is returned.
-Store {
-    componentNode: ComponentNode
-    data: list[object]
-    nextIndex: integer
-
-    resetIndex(): void
-    nextData(): [value, setValue]
-}
-*/
-class Store {
-    constructor({ componentNode }) {
-        this.componentNode = componentNode;
-
-        this.data = [];
-        this.nextIndex = 0;
-    }
-
-    resetIndex() {
-        this.nextIndex = 0;
-    }
-
-    nextData(defaultValue) {
-        let index = this.nextIndex++;
-
-        function setState(newValue) {
-            this.data[index] = newValue;
-            this.componentNode.queueRenderAsync();
-        }
-
-        if (index in this.data) {
-            return [this.data[index], setState];
-        } else {
-            this.data[index] = defaultValue;
-            return [this.data[index], setState];
-        }
     }
 }
 
@@ -99,10 +55,25 @@ class Node {
         }
     }
 
+    // Abstract.
+    createElement() {
+        ASSERT_NOT_REACHED();
+    }
+
+    // Abstract.
+    updateElement() {
+        ASSERT_NOT_REACHED();
+    }
+
+    // Abstract.
+    removeElement() {
+        ASSERT_NOT_REACHED();
+    }
+
+    // Abstract.
     // Is provided with the value of 'Node.children[0]' of the previous render.
     renderChildren({ oldFirstChild }) {
-        // This is an abstract class that doesn't have children.
-        // Inheriting classes can override this function.
+        ASSERT_NOT_REACHED();
     }
 
     // When a change occurs, we provide the 'oldNode' that existed before the change.
@@ -142,7 +113,11 @@ class Node {
         }
 
         function handle_SKIP_MATCH() {
-            // FIXME: Remove elements, update 'oldNode'.
+            // Remove all the skipped elements.
+            while (!oldNode.isEqual(newNode)) {
+                oldNode.removeElement();
+                oldNode = oldNode.nextSibling;
+            }
 
             return handle_DIRECT_MATCH();
         }
@@ -172,70 +147,20 @@ class Node {
     }
 }
 
-/*
-// Sentinel nodes indicate the absence of a value, used for conditional rendering.
-// This differs from React where 'null', 'false' or 'true' are sentinel values.
-SentinelNode : Node {
+// FIXME: SentinelNode
 
-}
-*/
-class SentinelNode extends Node {
-    constructor({ nextSibling }) {
-        this.nextSibling = nextSibling;
-    }
-
-    // FIXME
-}
-
-/*
-// Components are essentially wrappers for other nodes and eventually for HTML elements.
-// They keep state that can be used by component functions.
-ComponentNode : Node {
-    // We assume that the component function doesn't change, it must not be computed dynamically.
-    componentFunction: function
-
-    properties: map[string, object]
-    children: list[Node]
-
-    store: Store
-
-    queueRenderAsync(): void
-
-    render({ oldElement: window.Element, oldNode: ComponentNode }): void
-}
-*/
-class ComponentNode extends Node {
-    constructor({ nextSibling, componentFunction, properties, children }) {
-        super({ nextSibling });
-
-        this.componentFunction = componentFunction;
-        this.properties = properties;
-        this.children = children;
-
-        this.store = new Store({
-            componentNode: this,
-        });
-    }
-
-    async queueRenderAsync() {
-        // FIXME
-    }
-
-    render({ oldElement, oldNode }) {
-        // FIXME
-    }
-}
+// FIXME: ComponentNode
 
 /*
 TextNode {
     text: string
-
     renderedElement: window.Element?
 
     createElement(): window.Element
-    updateElement(window.Element): void
+    updateElement(): window.Element
+    removeElement(): void
 
-    render({ oldNode: TextNode }): void
+    renderChildren(oldFirstChild: Node): void
 }
 */
 class TextNode extends Node {
@@ -252,15 +177,23 @@ class TextNode extends Node {
     }
 
     createElement() {
-        return document.createTextNode(this.text);
+        this.renderedElement = document.createTextNode(this.text);
+        return this.renderedElement;
     }
 
     updateElement() {
-        let element = this.renderedElement;
+        ASSERT(this.renderedElement.nodeName === "#text");
 
-        ASSERT(element.nodeName === "#text");
+        this.renderedElement.nodeValue = this.text;
+    }
 
-        element.nodeValue = this.text;
+    removeElement() {
+        this.renderedElement.parentNode.removeChild(this.renderedElement);
+        this.renderedElement = null;
+    }
+
+    renderChildren() {
+        // Has no children.
     }
 }
 
@@ -269,13 +202,13 @@ HtmlNode : Node {
     elementType: string
     properties: map[string, object]
     children: list[Node]
-
     renderedElement: window.Element?
 
     createElement(): window.Element
-    updateElement(window.Element): void
+    updateElement(): window.Element
+    removeElement(): void
 
-    render({ oldElement: window.Element, oldNode: HtmlNode }): void
+    renderChildren(oldFirstChild: Node): void
 }
 */
 class HtmlNode extends Node {
@@ -300,8 +233,7 @@ class HtmlNode extends Node {
         
         // Set all the attributes.
         for (let [propertyName, propertyValue] of Object.entries(this.properties)) {
-            // FIXME: Verify that this is a string.
-
+            ASSERT(typeof propertyValue === "string" || propertyValue instanceof String);
             renderedElement.setAttribute(propertyName, propertyValue);
         }
 
@@ -322,10 +254,26 @@ class HtmlNode extends Node {
         for (let [propertyName, propertyValue] of Object.entries(this.properties)) {
             this.renderedElement.setAttribute(propertyName, propertyValue);
         }
+
+        return this.renderedElement;
+    }
+
+    removeElement() {
+        this.renderedElement.parentNode.removeChild(this.renderedElement);
+        this.renderedElement = null;
     }
 
     renderChildren({ oldFirstChild }) {
-        // FIXME
+        // Update each child and advance which old child is referenced.
+        for (let child of this.children) {
+            oldFirstChild = child.render({ oldNode: oldFirstChild });
+        }
+
+        // Remove trailing nodes that no longer exist.
+        while (oldFirstChild !== null) {
+            oldFirstChild.removeElement();
+            oldFirstChild = oldFirstChild.nextSibling;
+        }
     }
 }
 
