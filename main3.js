@@ -17,18 +17,27 @@ Node {
     nextSibling: Node?
 
     isEqual(otherNode: Node): boolean
-    renderChildren(oldFirstChild: Node): void
+
+    abstract createElement(): window.Element
+    abstract updateElement(oldRenderedElement: window.Element): window.Element
+    abstract removeElement(): void
+
+    abstract renderChildren(oldFirstChild: Node): void
     render(oldNode: Node): Node
 }
 */
 class Node {
     constructor({ nextSibling }) {
-        this.nextSibling = nextSibling;
+        if (nextSibling !== undefined) {
+            this.nextSibling = nextSibling;
+        } else {
+            this.nextSibling = null;
+        }
     }
 
     isEqual(otherNode) {
         // Sentinel values indicate conditionally rendered elements.
-        if (otherNode instanceof SentinelNode) {
+        if (otherNode instanceof SentinelNode || this instanceof SentinelNode) {
             return true;
         }
 
@@ -43,8 +52,6 @@ class Node {
         }
 
         switch(this.constructor) {
-            case ComponentNode:
-                return this.componentFunction === otherNode.componentFunction;
             case HtmlNode:
                 return this.elementType === otherNode.elementType;
             case TextNode:
@@ -61,7 +68,7 @@ class Node {
     }
 
     // Abstract.
-    updateElement() {
+    updateElement({ oldRenderedElement }) {
         ASSERT_NOT_REACHED();
     }
 
@@ -104,39 +111,55 @@ class Node {
         //
         //     This happens if something is added to a list and thus didn't exist in the previous render.
 
-        function handle_DIRECT_MATCH() {
-            newNode.updateElement();
+        let handle_DIRECT_MATCH = () => {
+            this.updateElement({ oldRenderedElement: oldNode.renderedElement });
 
-            this.renderChildren({ oldFirstChild: oldNode.children[0] });
+            let oldFirstChild;
+            if (oldNode !== null && oldNode.children.length >= 1) {
+                oldFirstChild = oldNode.children[0];
+            } else {
+                oldFirstChild = null;
+            }
+
+            this.renderChildren({ oldFirstChild });
 
             return oldNode.nextSibling;
-        }
+        };
 
-        function handle_SKIP_MATCH() {
+        let handle_SKIP_MATCH = () => {
             // Remove all the skipped elements.
-            while (!oldNode.isEqual(newNode)) {
+            while (!this.isEqual(oldNode)) {
                 oldNode.removeElement();
                 oldNode = oldNode.nextSibling;
             }
 
             return handle_DIRECT_MATCH();
-        }
+        };
 
-        function handle_NO_MATCH() {
-            oldNode.renderedElement.insertBefore(newNode.createElement());
+        let handle_NO_MATCH = () => {
+            oldNode.renderedElement.insertBefore(this.createElement());
 
-            this.renderChildren({ oldFirstChild: oldNode.children[0] });
+            let oldFirstChild;
+            if (oldNode !== null && oldNode.children.length >= 1) {
+                oldFirstChild = oldNode.children[0];
+            } else {
+                oldFirstChild = null;
+            }
+
+            this.renderChildren({ oldFirstChild });
 
             return oldNode;
-        }
+        };
 
-        if (oldNode.isEqual(newNode)) {
+        if (oldNode === null) {
+            return handle_NO_MATCH();
+        } else if (this.isEqual(oldNode)) {
             return handle_DIRECT_MATCH();
         } else {
             // Search following siblings for match.
             let oldSiblingNode = oldNode.nextSibling;
             while (oldSiblingNode !== null) {
-                if (oldSiblingNode.isEqual(newNode)) {
+                if (this.isEqual(oldSiblingNode)) {
                     return handle_SKIP_MATCH();
                 }
             }
@@ -144,6 +167,40 @@ class Node {
             ASSERT(oldSiblingNode !== null);
             return handle_NO_MATCH();
         }
+    }
+}
+
+/*
+SentinelNode {
+    createElement(): window.Element
+    updateElement(oldRenderedElement: window.Element): window.Element
+    removeElement(): void
+
+    renderChildren(oldFirstChild: Node): void
+}
+*/
+class SentinelNode extends Node {
+    constructor({ nextSibling }) {
+        super({ nextSibling });
+    }
+
+    createElement() {
+        // FIXME: How should we handle this?
+        ASSERT_NOT_REACHED();
+    }
+
+    updateElement({ oldRenderedElement }) {
+        // FIXME: How should we handle this?
+        ASSERT_NOT_REACHED();
+    }
+
+    removeElement() {
+        // FIXME: How should we handle this?
+        ASSERT_NOT_REACHED();
+    }
+
+    renderChildren({ oldFirstChild }) {
+        // Has no children.
     }
 }
 
@@ -157,7 +214,7 @@ TextNode {
     renderedElement: window.Element?
 
     createElement(): window.Element
-    updateElement(): window.Element
+    updateElement(oldRenderedElement: window.Element): window.Element
     removeElement(): void
 
     renderChildren(oldFirstChild: Node): void
@@ -181,10 +238,13 @@ class TextNode extends Node {
         return this.renderedElement;
     }
 
-    updateElement() {
-        ASSERT(this.renderedElement.nodeName === "#text");
+    updateElement({ oldRenderedElement }) {
+        this.renderedElement = oldRenderedElement;
 
+        ASSERT(this.renderedElement.nodeName === "#text");
         this.renderedElement.nodeValue = this.text;
+
+        return this.renderedElement;
     }
 
     removeElement() {
@@ -205,7 +265,7 @@ HtmlNode : Node {
     renderedElement: window.Element?
 
     createElement(): window.Element
-    updateElement(): window.Element
+    updateElement(oldRenderedElement: window.Element): window.Element
     removeElement(): void
 
     renderChildren(oldFirstChild: Node): void
@@ -240,11 +300,13 @@ class HtmlNode extends Node {
         return this.renderedElement;
     }
 
-    updateElement() {
+    updateElement({ oldRenderedElement }) {
+        this.renderedElement = oldRenderedElement;
+
         ASSERT(this.renderedElement.nodeName === this.elementType);
 
         // Remove attributes that do not appear in this node.
-        for (let propertyName of Object.keys(element.attributes)) {
+        for (let propertyName of Object.keys(this.renderedElement.attributes)) {
             if (false === propertyName in this.properties) {
                 this.renderedElement.removeAttribute(propertyName);
             }
@@ -264,6 +326,9 @@ class HtmlNode extends Node {
     }
 
     renderChildren({ oldFirstChild }) {
+        // FIXME: This can pass 'oldNode=null' to 'render'.
+        //        I don't think that method can handle it, because we use 'insertBefore'.
+
         // Update each child and advance which old child is referenced.
         for (let child of this.children) {
             oldFirstChild = child.render({ oldNode: oldFirstChild });
@@ -298,3 +363,22 @@ class Instance {
         newNode.render({ oldNode });
     }
 }
+
+new Instance()
+    .mount(
+        document.getElementById("root"),
+        new HtmlNode({
+            elementType: "div",
+            properties: {},
+            children: [
+                new HtmlNode({
+                    elementType: "p",
+                    properties: {},
+                    children: [
+                        new TextNode({
+                            text: "Hello, world!",
+                        }),
+                    ],
+                }),
+            ],
+        }));
