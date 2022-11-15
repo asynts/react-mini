@@ -27,11 +27,17 @@ Node {
 }
 */
 class Node {
-    constructor({ nextSibling }) {
+    constructor({ nextSibling, children }) {
         if (nextSibling !== undefined) {
             this.nextSibling = nextSibling;
         } else {
             this.nextSibling = null;
+        }
+
+        if (children !== undefined) {
+            this.children = children;
+        } else {
+            this.children = null;
         }
     }
 
@@ -114,6 +120,8 @@ class Node {
         //     It doesn't happen for the root node because we create a fake element for that.
 
         let handle_DIRECT_MATCH = () => {
+            console.log("handle_DIRECT_MATCH");
+
             this.updateElement({ oldRenderedElement: oldNode.renderedElement });
 
             let oldFirstChild;
@@ -129,6 +137,8 @@ class Node {
         };
 
         let handle_SKIP_MATCH = () => {
+            console.log("handle_SKIP_MATCH");
+
             // Remove all the skipped elements.
             while (!this.isEqual(oldNode)) {
                 oldNode.removeElement();
@@ -139,7 +149,9 @@ class Node {
         };
 
         let handle_NO_MATCH = () => {
-            oldNode.renderedElement.insertBefore(this.createElement());
+            console.log("handle_NO_MATCH");
+
+            oldNode.renderedElement.parentElement.insertBefore(this.createElement(), oldNode.renderedElement);
 
             let oldFirstChild;
             if (oldNode !== null && oldNode.children.length >= 1) {
@@ -154,6 +166,8 @@ class Node {
         };
 
         let handle_NO_MATCH_NEW = () => {
+            console.log("handle_NO_MATCH_NEW");
+
             // We do not have an 'oldNode' that we can use as an insertion point.
             // This only happens if the 'parentNode' was newly created.
             //
@@ -177,9 +191,10 @@ class Node {
                 if (this.isEqual(oldSiblingNode)) {
                     return handle_SKIP_MATCH();
                 }
+
+                oldSiblingNode = oldSiblingNode.nextSibling;
             }
 
-            ASSERT(oldSiblingNode !== null);
             return handle_NO_MATCH();
         }
     }
@@ -196,7 +211,7 @@ SentinelNode {
 */
 class SentinelNode extends Node {
     constructor({ nextSibling }) {
-        super({ nextSibling });
+        super({ nextSibling, children: [] });
     }
 
     createElement() {
@@ -219,8 +234,6 @@ class SentinelNode extends Node {
     }
 }
 
-// FIXME: SentinelNode
-
 // FIXME: ComponentNode
 
 /*
@@ -237,7 +250,7 @@ TextNode {
 */
 class TextNode extends Node {
     constructor({ nextSibling, text, renderedElement }) {
-        super({ nextSibling });
+        super({ nextSibling, children: [] });
 
         this.text = text;
 
@@ -288,13 +301,12 @@ HtmlNode : Node {
 */
 class HtmlNode extends Node {
     constructor({ nextSibling, elementType, properties, children, renderedElement }) {
-        super({ nextSibling });
+        super({ nextSibling, children });
 
         // This is important because this is what 'Element.nodeName' reports.
         this.elementType = elementType.toUpperCase();
 
         this.properties = properties;
-        this.children = children;
 
         if (renderedElement !== undefined) {
             this.renderedElement = renderedElement;
@@ -382,6 +394,7 @@ class Instance {
         });
 
         // Render.
+        console.log("initial render:");
         newNode.render({
             oldNode,
             parentElement: null,
@@ -391,7 +404,7 @@ class Instance {
     }
 }
 
-let node = new Instance()
+let rootNode = new Instance()
     .mount(
         document.getElementById("root"),
         /*
@@ -436,4 +449,40 @@ let node = new Instance()
             ],
         }));
 
-// FIXME: make changes to 'node'.
+document.getElementById("update-button")
+        .addEventListener("click", () => {
+            /*
+            <div key="root" #1>
+                <p key="1" #2>
+                    <text #3>This has been updated!</text>
+                </p>
+            </div>
+            */
+            let newNode = new HtmlNode({
+                elementType: "div",
+                properties: {
+                    key: "root",
+                },
+                children: [
+                    new HtmlNode({
+                        elementType: "p",
+                        properties: {
+                            key: "1",
+                        },
+                        children: [
+                            new TextNode({
+                                text: "This has been updated!",
+                            }),
+                        ],
+                    }),        
+                ],
+            });
+            
+            console.log("update render:");
+            newNode.render({
+                oldNode: rootNode,
+                parentElement: null,
+            });
+
+            rootNode = newNode;
+        });
