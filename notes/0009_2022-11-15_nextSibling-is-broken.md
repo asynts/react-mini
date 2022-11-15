@@ -47,3 +47,7 @@
 ### Theories
 
 -   I don't ever set the `nextSibling` when constructing the trees, am I?
+
+### Result
+
+-   I moved the logic to create the trees into functions and set `nextSibling` properly.

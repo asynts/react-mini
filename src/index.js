@@ -408,85 +408,106 @@ class Instance {
     }
 }
 
+function createMainNode() {
+    /*
+    <div key="root" #1>
+        <p key="1" #2>
+            <text #3>Hello, world!</text>
+            <span key="2" style="font-weight: bold;" #4>
+                <text #5>This is bold!</text>
+            </span>
+        </p>
+    </div>
+    */
+    let node_5 = new TextNode({
+        text: "This is bold!",
+    });
+    let node_4 = new HtmlNode({
+        elementType: "span",
+        properties: {
+            key: "2",
+            style: "font-weight: bold;",
+        },
+        children: [
+            node_5,
+        ],
+    });
+    let node_3 = new TextNode({
+        text: "Hello, world!",
+        nextSibling: node_4,
+    });
+    let node_2 = new HtmlNode({
+        elementType: "p",
+        properties: {
+            key: "1",
+        },
+        children: [
+            node_3,
+            node_4,
+        ],
+    });
+    let node_1 = new HtmlNode({
+        elementType: "div",
+        properties: {
+            key: "root",
+        },
+        children: [
+            node_2,
+        ],
+    });
+
+    return node_1;
+}
+
+let buttonPressCount = 0;
+function createUpdatedNode() {
+    /*
+    <div key="root" #1>
+        <p key="1" #2>
+            <text #3>The button has been pressed {buttonPressCount} times!</text>
+        </p>
+    </div>
+    */
+    let node_3 = new TextNode({
+        text: `The button has been pressed ${buttonPressCount} times!`,
+    });
+    let node_2 = new HtmlNode({
+        elementType: "p",
+        properties: {
+            key: "1",
+        },
+        children: [
+            node_3,
+        ],
+    });
+    let node_1 = new HtmlNode({
+        elementType: "div",
+        properties: {
+            key: "root",
+        },
+        children: [
+            node_2,
+        ],
+    });
+
+    return node_1;
+}
+
 let rootNode = new Instance()
     .mount(
         document.getElementById("root"),
-        /*
-        <div key="root" #1>
-            <p key="1" #2>
-                <text #3>Hello, world!</text>
-                <span key="2" style="font-weight: bold;" #4>
-                    <text #5>This is bold!</text>
-                </span>
-            </p>
-        </div>
-        */
-        new HtmlNode({
-            elementType: "div",
-            properties: {
-                key: "root",
-            },
-            children: [
-                new HtmlNode({
-                    elementType: "p",
-                    properties: {
-                        key: "1",
-                    },
-                    children: [
-                        new TextNode({
-                            text: "Hello, world!",
-                        }),
-                        new HtmlNode({
-                            elementType: "span",
-                            properties: {
-                                key: "2",
-                                style: "font-weight: bold;",
-                            },
-                            children: [
-                                new TextNode({
-                                    text: "This is bold!",
-                                }),
-                            ],
-                        }),
-                    ],
-                }),
-            ],
-        }));
+        createMainNode(),
+    );
 
 document.getElementById("update-button")
         .addEventListener("click", () => {
-            /*
-            <div key="root" #1>
-                <p key="1" #2>
-                    <text #3>This has been updated!</text>
-                </p>
-            </div>
-            */
-            let newNode = new HtmlNode({
-                elementType: "div",
-                properties: {
-                    key: "root",
-                },
-                children: [
-                    new HtmlNode({
-                        elementType: "p",
-                        properties: {
-                            key: "1",
-                        },
-                        children: [
-                            new TextNode({
-                                text: "This has been updated!",
-                            }),
-                        ],
-                    }),        
-                ],
-            });
-            
+            buttonPressCount += 1;
+
             console.log("update render:");
+            let newNode = createUpdatedNode();
             newNode.render({
                 oldNode: rootNode,
                 parentElement: null,
             });
-
             rootNode = newNode;
         });
