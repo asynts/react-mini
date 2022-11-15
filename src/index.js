@@ -52,7 +52,7 @@ class Node {
                     && this.elementType === otherNode.elementType;
             case TextNode:
                 return true;
-            
+
             default:
                 ASSERT_NOT_REACHED();
         }
@@ -117,7 +117,7 @@ class Node {
             this.updateElement({ oldRenderedElement: oldNode.renderedElement });
 
             let oldFirstChild;
-            if (oldNode !== null && oldNode.children.length >= 1) {
+            if (oldNode.children.length >= 1) {
                 oldFirstChild = oldNode.children[0];
             } else {
                 oldFirstChild = null;
@@ -292,7 +292,7 @@ class HtmlNode extends Node {
 
         // This is important because this is what 'Element.nodeName' reports.
         this.elementType = elementType.toUpperCase();
- 
+
         this.properties = properties;
         this.children = children;
 
@@ -305,7 +305,7 @@ class HtmlNode extends Node {
 
     createElement() {
         this.renderedElement = document.createElement(this.elementType);
-        
+
         // Set all the attributes.
         for (let [propertyName, propertyValue] of Object.entries(this.properties)) {
             ASSERT(typeof propertyValue === "string" || propertyValue instanceof String);
@@ -341,39 +341,27 @@ class HtmlNode extends Node {
     }
 
     renderChildren({ oldFirstChild }) {
-        let lastExistingChild = oldFirstChild;
-
-        // Remove trailing nodes that no longer exist.
-        let removeRemainingElements = () => {
-            // FIXME: This doesn't work because we already iterated through it.
-            while (lastExistingChild !== null) {
-                lastExistingChild.removeElement();
-                lastExistingChild = lastExistingChild.nextSibling;
-            }    
-        };
+        let oldNextChild = oldFirstChild
 
         // Render the children.
         for (let child of this.children) {
-            // This ensures that if we call 'Node.render' with 'oldNode=null', there are no children coming after.
-            if (oldFirstChild === null) {
-                removeRemainingElements();
-            } else {
-                lastExistingChild = oldFirstChild;
-            }
-
-            oldFirstChild = child.render({
-                oldNode: oldFirstChild,
+            oldNextChild = child.render({
+                oldNode: oldNextChild,
                 parentElement: this.renderedElement,
             });
         }
 
-        removeRemainingElements();
+        // Remove trailing elements
+        while (oldNextChild !== null) {
+            oldNextChild.removeElement();
+            oldNextChild = oldNextChild.nextSibling;
+        }
     }
 }
 
 /*
 Instance {
-    mount(targetElement: window.Element, node: Node): void
+    mount(targetElement: window.Element, node: Node): Node
 }
 */
 class Instance {
@@ -383,6 +371,7 @@ class Instance {
         oldElement.setAttribute("key", "root");
         markerTargetElement.replaceWith(oldElement);
 
+        // Create the corresponding node.
         let oldNode = new HtmlNode({
             elementType: "div",
             properties: {
@@ -392,72 +381,25 @@ class Instance {
             renderedElement: oldElement,
         });
 
+        // Render.
         newNode.render({
             oldNode,
             parentElement: null,
         });
 
-        // Trigger a re-render shortly after for testing.
-        setTimeout(() => {
-            /*
-            <div key="root">
-                <p key="1">
-                    <text>Hello, world!</text>
-                    <span key="2" style="font-weight: bold;">
-                        <text>This text was updated!</text>
-                    </span>
-                </p>
-            </div>
-            */
-            let updatedNode = new HtmlNode({
-                elementType: "div",
-                properties: {
-                    key: "root",
-                },
-                children: [
-                    new HtmlNode({
-                        elementType: "p",
-                        properties: {
-                            key: "1",
-                        },
-                        children: [
-                            new TextNode({
-                                text: "Hello, world!",
-                            }),
-                            new HtmlNode({
-                                elementType: "span",
-                                properties: {
-                                    key: "2",
-                                    style: "font-weight: bold;",
-                                },
-                                children: [
-                                    new TextNode({
-                                        text: "This text was updated!",
-                                    }),
-                                ],
-                            }),
-                        ],
-                    }),
-                ],
-            });
-
-            updatedNode.render({
-                oldNode: newNode,
-                parentElement: null,
-            });
-        }, 500);
+        return newNode;
     }
 }
 
-new Instance()
+let node = new Instance()
     .mount(
         document.getElementById("root"),
         /*
-        <div key="root">
-            <p key="1">
-                <text>Hello, world!</text>
-                <span key="2" style="font-weight: bold;">
-                    <text>This is bold!</text>
+        <div key="root" #1>
+            <p key="1" #2>
+                <text #3>Hello, world!</text>
+                <span key="2" style="font-weight: bold;" #4>
+                    <text #5>This is bold!</text>
                 </span>
             </p>
         </div>
@@ -493,3 +435,5 @@ new Instance()
                 }),
             ],
         }));
+
+// FIXME: make changes to 'node'.

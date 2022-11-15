@@ -1,0 +1,56 @@
+-   The goal here is to fix the logic in `renderChildren`.
+
+-   I can think of the following cases:
+
+    1. ```none
+        null <- oldChild
+
+        TextNode("foo") <- firstChild
+        null
+        ```
+
+    2. ```none
+        TextNode("foo") <- oldChild
+        null
+
+        TextNode("bar") <- firstChild
+        null
+        ```
+
+    3. ```none
+        TextNode("foo") <- oldChild
+        TextNode("bar")
+        null
+
+        TextNode("baz") <- firstChild
+        null
+        ```
+
+    4. ```none
+        TextNode("foo") <- oldChild
+        null
+
+        null <- firstChild
+        ```
+
+-   This is the code that I came up with:
+
+    ```js
+    renderChildren({ oldFirstChild }) {
+        let oldNextChild = oldFirstChild
+
+        // Render the children.
+        for (let child of this.children) {
+            oldNextChild = child.render({
+                oldNode: oldNextChild,
+                parentElement: this.renderedElement,
+            });
+        }
+
+        // Remove trailing elements
+        while (oldNextChild !== null) {
+            oldNextChild.removeElement();
+            oldNextChild = oldNextChild.nextSibling;
+        }
+    }
+    ```
