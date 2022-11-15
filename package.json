@@ -1,0 +1,10 @@
+{
+    "name": "local-react-mini",
+    "version": "0.1.0",
+    "scripts": {
+        "start": "wds --root-dir ./src/ --open --app-index ./src/index.html --watch"
+    },
+    "devDependencies": {
+        "@web/dev-server": "^0.1.35"
+    }
+}
