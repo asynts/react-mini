@@ -353,10 +353,13 @@ class HtmlNode extends Node {
     }
 
     renderChildren({ oldFirstChild }) {
+        console.log("HtmlNode.renderChilden", oldFirstChild);
+
         let oldNextChild = oldFirstChild
 
         // Render the children.
         for (let child of this.children) {
+            console.log("-> render", child, oldNextChild);
             oldNextChild = child.render({
                 oldNode: oldNextChild,
                 parentElement: this.renderedElement,
@@ -365,6 +368,7 @@ class HtmlNode extends Node {
 
         // Remove trailing elements
         while (oldNextChild !== null) {
+            console.log("-> remove", oldNextChild);
             oldNextChild.removeElement();
             oldNextChild = oldNextChild.nextSibling;
         }
