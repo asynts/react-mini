@@ -135,19 +135,55 @@ function CalculatorComponent({ state, useState }) {
     return node_1;
 }
 
-/*
-let component = new ComponentNode({
-    nextSibling: null,
-    componentFunction: IncrementComponent,
-    properties: {
-        key: "root",
-    },
-});
-*/
+function MainComponent({ state, useState }) {
+    /*
+    <div #1 key="root">
+        <CalculatorComponent #2 key="1" />
+        <IncrementComponent #3 key="2" />
+        <CalculatorComponent #4 key="3" />
+    </div>
+    */
+
+    let node_4 = new ComponentNode({
+        nextSibling: null,
+        componentFunction: CalculatorComponent,
+        properties: {
+            key: "3",
+        },
+    });
+    let node_3 = new ComponentNode({
+        nextSibling: node_4,
+        componentFunction: IncrementComponent,
+        properties: {
+            key: "2",
+        },
+    });
+    let node_2 = new ComponentNode({
+        nextSibling: node_3,
+        componentFunction: CalculatorComponent,
+        properties: {
+            key: "1",
+        },
+    });
+    let node_1 = new HtmlNode({
+        nextSibling: null,
+        elementType: "div",
+        properties: {
+            key: "root",
+        },
+        children: [
+            node_2,
+            node_3,
+            node_4,
+        ],
+    });
+
+    return node_1;
+}
 
 let component = new ComponentNode({
     nextSibling: null,
-    componentFunction: CalculatorComponent,
+    componentFunction: MainComponent,
     properties: {
         key: "root",
     },
