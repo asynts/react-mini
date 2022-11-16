@@ -22,11 +22,11 @@ Node {
     isEqual(otherNode: Node): boolean
 
     abstract createElement(): window.Element
-    abstract updateElement(oldNode: Node): window.Element
+    abstract updateElement({ oldNode: Node }): window.Element
     abstract removeElement(): void
 
-    abstract renderChildren(oldFirstChild: Node): void
-    render(oldNode: Node, parentElement: window.Element): Node
+    abstract renderChildren({ oldFirstChild: Node }): void
+    render({ oldNode: Node, parentElement: window.Element }): Node
 }
 */
 export class Node {
@@ -57,6 +57,7 @@ export class Node {
 
         switch(this.constructor) {
             case HtmlNode:
+            case ComponentNode:
                 return this.properties.key === otherNode.properties.key
                     && this.elementType === otherNode.elementType;
             case TextNode:
@@ -214,10 +215,10 @@ export class Node {
 /*
 SentinelNode {
     createElement(): window.Element
-    updateElement(oldNode: SentinelNode): window.Element
+    updateElement({ oldNode: SentinelNode }): window.Element
     removeElement(): void
 
-    renderChildren(oldFirstChild: Node): void
+    renderChildren({ oldFirstChild: Node }): void
 }
 */
 export class SentinelNode extends Node {
@@ -245,7 +246,99 @@ export class SentinelNode extends Node {
     }
 }
 
-// FIXME: ComponentNode
+/*
+ComponentNode : Node {
+    componentFunction: { state, useState } -> Node
+    properties: map[string, object]
+
+    state: map[string, object]?
+    innerNode: Node?
+
+    useState(key: String, defaultValue: object): any
+
+    createElement(): window.Element
+    updateElement({ oldNode: ComponentNode }): window.Element
+    removeElement(): void
+
+    renderChildren({ oldFirstChild: Node }): void
+}
+*/
+export class ComponentNode extends Node {
+    constructor({ nextSibling, componentFunction, properties }) {
+        super({ nextSibling, children: [] })
+
+        this.componentFunction = componentFunction;
+        this.properties = properties;
+
+        this.state = null;
+        this.innerNode = null;
+    }
+
+    useState(key, defaultValue) {
+        if (false === key in this.state) {
+            this.state[key] = defaultValue;
+        }
+
+        let value = this.state[key];
+
+        function setValue(newValue) {
+            this.state[key] = newValue;
+
+            // Render this component with new state.
+            let newNode = new ComponentNode({
+                nextSibling: this.nextSibling,
+                componentFunction: this.componentFunction,
+                properties: this.properties,
+            });
+            newNode.render({
+                oldNode: this,
+                parentElement: null,
+            });
+        }
+
+        return [value, setValue.bind(this)];
+    }
+
+    createElement() {
+        ASSERT(this.state === null);
+        this.state = {};
+
+        this._computeInnerNode();
+
+        return this.innerNode.createElement();
+    }
+
+    updateElement({ oldNode }) {
+        // Copy the state from the old version.
+        ASSERT(this.state === null);
+        ASSERT(oldNode.state !== null);
+        this.state = oldNode.state;
+
+        this._computeInnerNode();
+
+        ASSERT(oldNode.innerNode !== null);
+        return this.innerNode.updateElement({ oldNode: oldNode.innerNode });
+    }
+
+    removeElement() {
+        ASSERT(this.innerNode !== null);
+        return this.innerNode.removeElement();
+    }
+
+    renderChildren({ oldFirstChild }) {
+        ASSERT(this.innerNode !== null);
+        return this.innerNode.renderChildren({ oldFirstChild });
+    }
+
+    _computeInnerNode() {
+        // Run the component function.
+        ASSERT(this.innerNode === null);
+        this.innerNode = this.componentFunction({
+            useState: this.useState.bind(this),
+            state: this.state,
+        });
+    }
+}
 
 /*
 TextNode {
@@ -253,10 +346,10 @@ TextNode {
     renderedElement: window.Element?
 
     createElement(): window.Element
-    updateElement(oldNode: TextNode): window.Element
+    updateElement({ oldNode: TextNode }): window.Element
     removeElement(): void
 
-    renderChildren(oldFirstChild: Node): void
+    renderChildren({ oldFirstChild: Node }): void
 }
 */
 export class TextNode extends Node {
@@ -304,10 +397,10 @@ HtmlNode : Node {
     renderedElement: window.Element?
 
     createElement(): window.Element
-    updateElement(oldNode: HtmlNode): window.Element
+    updateElement({ oldNode: HtmlNode }): window.Element
     removeElement(): void
 
-    renderChildren(oldFirstChild: Node): void
+    renderChildren({ oldFirstChild: Node }): void
 }
 */
 export class HtmlNode extends Node {
@@ -411,7 +504,7 @@ export class HtmlNode extends Node {
 
 /*
 Instance {
-    mount(targetElement: window.Element, node: Node): Node
+    mount(targetElement: window.Element, node: Node): void
 }
 */
 export class Instance {
@@ -436,7 +529,5 @@ export class Instance {
             oldNode,
             parentElement: null,
         });
-
-        return newNode;
     }
 }

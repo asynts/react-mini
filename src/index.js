@@ -2,7 +2,63 @@ import {
     Instance,
     TextNode,
     HtmlNode,
+    ComponentNode,
 } from "./react-mini.js";
+
+function NewIncrementComponent({ useState, state }) {
+    let [counter, setCounter] = useState("counter", 0);
+
+    /*
+    <div #1 key="root">
+        <p #2 key="1">
+            <text #3>{counter}</text>
+        </p>
+        <button #4 key="2" onClick={() => setCounter(counter + 1)}>
+            <text #5>Increment</text>
+        </button>
+    </div>
+    */
+    let node_5 = new TextNode({
+        text: "Increment",
+    });
+    let node_4 = new HtmlNode({
+        nextSibling: null,
+        elementType: "button",
+        properties: {
+            key: "2",
+            $click: () => setCounter(counter + 1),
+        },
+        children: [
+            node_5,
+        ],
+    });
+    let node_3 = new TextNode({
+        text: `${counter}`,
+    });
+    let node_2 = new HtmlNode({
+        nextSibling: node_4,
+        elementType: "p",
+        properties: {
+            key: "1",
+        },
+        children: [
+            node_3,
+        ],
+    });
+    let node_1 = new HtmlNode({
+        nextSibling: null,
+        elementType: "div",
+        properties: {
+            key: "root",
+        },
+        children: [
+            node_2,
+            node_4,
+        ],
+    });
+
+    return node_1;
+}
 
 function CalculatorComponent({ updateNode }) {
     let state = {
@@ -139,18 +195,14 @@ function IncrementComponent({ updateNode }) {
     return createNode;
 }
 
-let component = CalculatorComponent({ updateNode: update });
-
-let rootNode = new Instance().mount(
-    document.getElementById("root"),
-    component(),
-);
-
-function update() {
-    let newRootNode = component();
-    newRootNode.render({
-        oldNode: rootNode,
-        parentElement: null,
-    });
-    rootNode = newRootNode;
-}
+new Instance()
+    .mount(
+        document.getElementById("root"),
+        new ComponentNode({
+            nextSibling: null,
+            componentFunction: NewIncrementComponent,
+            properties: {
+                key: "root",
+            },
+        }),
+    );
