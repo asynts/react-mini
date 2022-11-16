@@ -1,5 +1,6 @@
 export const DEBUG_RENDER_MATCHING = false;
 export const DEBUG_RENDER_CHILDREN = false;
+export const DEBUG_ELEMENT_CREATION = false;
 
 export function ASSERT_NOT_REACHED() {
     debugger;
@@ -25,22 +26,17 @@ Node {
     abstract updateElement({ oldNode: Node }): window.Element
     abstract removeElement(): void
 
+    abstract getChildren(): list[Node]
     abstract renderChildren({ oldFirstChild: Node }): void
     render({ oldNode: Node, parentElement: window.Element }): Node
 }
 */
 export class Node {
-    constructor({ nextSibling, children }) {
+    constructor({ nextSibling }) {
         if (nextSibling !== undefined) {
             this.nextSibling = nextSibling;
         } else {
             this.nextSibling = null;
-        }
-
-        if (children !== undefined) {
-            this.children = children;
-        } else {
-            this.children = null;
         }
     }
 
@@ -84,7 +80,11 @@ export class Node {
     }
 
     // Abstract.
-    // Is provided with the value of 'Node.children[0]' of the previous render.
+    getChildren() {
+        ASSERT_NOT_REACHED();
+    }
+
+    // Abstract.
     renderChildren({ oldFirstChild }) {
         ASSERT_NOT_REACHED();
     }
@@ -131,8 +131,8 @@ export class Node {
             this.updateElement({ oldNode });
 
             let oldFirstChild;
-            if (oldNode.children.length >= 1) {
-                oldFirstChild = oldNode.children[0];
+            if (oldNode.getChildren().length >= 1) {
+                oldFirstChild = oldNode.getChildren()[0];
             } else {
                 oldFirstChild = null;
             }
@@ -164,8 +164,8 @@ export class Node {
             oldNode.renderedElement.parentElement.insertBefore(this.createElement(), oldNode.renderedElement);
 
             let oldFirstChild;
-            if (oldNode !== null && oldNode.children.length >= 1) {
-                oldFirstChild = oldNode.children[0];
+            if (oldNode !== null && oldNode.getChildren().length >= 1) {
+                oldFirstChild = oldNode.getChildren()[0];
             } else {
                 oldFirstChild = null;
             }
@@ -218,12 +218,13 @@ SentinelNode {
     updateElement({ oldNode: SentinelNode }): window.Element
     removeElement(): void
 
+    getChildren(): list[Node]
     renderChildren({ oldFirstChild: Node }): void
 }
 */
 export class SentinelNode extends Node {
     constructor({ nextSibling }) {
-        super({ nextSibling, children: [] });
+        super({ nextSibling });
     }
 
     createElement() {
@@ -239,6 +240,10 @@ export class SentinelNode extends Node {
     removeElement() {
         // FIXME: How should we handle this?
         ASSERT_NOT_REACHED();
+    }
+
+    getChildren() {
+        return [];
     }
 
     renderChildren({ oldFirstChild }) {
@@ -260,12 +265,13 @@ ComponentNode : Node {
     updateElement({ oldNode: ComponentNode }): window.Element
     removeElement(): void
 
+    getChildren(): list[Node]
     renderChildren({ oldFirstChild: Node }): void
 }
 */
 export class ComponentNode extends Node {
     constructor({ nextSibling, componentFunction, properties }) {
-        super({ nextSibling, children: [] })
+        super({ nextSibling })
 
         this.componentFunction = componentFunction;
         this.properties = properties;
@@ -300,6 +306,10 @@ export class ComponentNode extends Node {
     }
 
     createElement() {
+        if (DEBUG_ELEMENT_CREATION) {
+            console.log("ComponentNode.createElement");
+        }
+
         ASSERT(this.state === null);
         this.state = {};
 
@@ -309,6 +319,10 @@ export class ComponentNode extends Node {
     }
 
     updateElement({ oldNode }) {
+        if (DEBUG_ELEMENT_CREATION) {
+            console.log("ComponentNode.updateElement");
+        }
+
         // Copy the state from the old version.
         ASSERT(this.state === null);
         ASSERT(oldNode.state !== null);
@@ -321,8 +335,17 @@ export class ComponentNode extends Node {
     }
 
     removeElement() {
+        if (DEBUG_ELEMENT_CREATION) {
+            console.log("ComponentNode.removeElement");
+        }
+
         ASSERT(this.innerNode !== null);
         return this.innerNode.removeElement();
+    }
+
+    getChildren() {
+        ASSERT(this.innerNode !== null);
+        return this.innerNode.getChildren();
     }
 
     renderChildren({ oldFirstChild }) {
@@ -349,12 +372,13 @@ TextNode {
     updateElement({ oldNode: TextNode }): window.Element
     removeElement(): void
 
+    getChildren(): list[Node]
     renderChildren({ oldFirstChild: Node }): void
 }
 */
 export class TextNode extends Node {
     constructor({ nextSibling, text, renderedElement }) {
-        super({ nextSibling, children: [] });
+        super({ nextSibling });
 
         this.text = text;
 
@@ -384,6 +408,10 @@ export class TextNode extends Node {
         this.renderedElement = null;
     }
 
+    getChildren() {
+        return [];
+    }
+
     renderChildren() {
         // Has no children.
     }
@@ -405,11 +433,12 @@ HtmlNode : Node {
 */
 export class HtmlNode extends Node {
     constructor({ nextSibling, elementType, properties, children, renderedElement }) {
-        super({ nextSibling, children });
+        super({ nextSibling });
 
         // This is important because this is what 'Element.nodeName' reports.
         this.elementType = elementType.toUpperCase();
 
+        this.children = children;
         this.properties = properties;
 
         if (renderedElement !== undefined) {
@@ -420,6 +449,10 @@ export class HtmlNode extends Node {
     }
 
     createElement() {
+        if (DEBUG_ELEMENT_CREATION) {
+            console.log("HtmlNode.createElement", this);
+        }
+
         this.renderedElement = document.createElement(this.elementType);
 
         this._setPropertiesOnRenderedElement();
@@ -428,6 +461,10 @@ export class HtmlNode extends Node {
     }
 
     updateElement({ oldNode }) {
+        if (DEBUG_ELEMENT_CREATION) {
+            console.log("HtmlNode.updateElement", this);
+        }
+
         this.renderedElement = oldNode.renderedElement;
 
         ASSERT(this.renderedElement.nodeName === this.elementType);
@@ -455,8 +492,16 @@ export class HtmlNode extends Node {
     }
 
     removeElement() {
+        if (DEBUG_ELEMENT_CREATION) {
+            console.log("HtmlNode.removeElement", this);
+        }
+
         this.renderedElement.parentNode.removeChild(this.renderedElement);
         this.renderedElement = null;
+    }
+
+    getChildren() {
+        return this.children;
     }
 
     renderChildren({ oldFirstChild }) {
