@@ -5,7 +5,7 @@ import {
     ComponentNode,
 } from "./react-mini.js";
 
-function NewIncrementComponent({ useState, state }) {
+function IncrementComponent({ useState, state }) {
     let [counter, setCounter] = useState("counter", 0);
 
     /*
@@ -60,149 +60,101 @@ function NewIncrementComponent({ useState, state }) {
     return node_1;
 }
 
-function CalculatorComponent({ updateNode }) {
-    let state = {
+function CalculatorComponent({ state, useState }) {
+    let [inputState, setInputState] = useState("inputState", {
         a: "",
         b: "",
-    };
+    });
 
-    function createNode() {
-        function onChange(name) {
-            return event => {
-                state[name] = event.target.value;
-                updateNode();
-            };
-        }
-
-        /*
-        <div key="root" #1>
-            <input key="1" type="text" value={state.a} $change={onChange("a")} #2 />
-            <input key="2" type="text" value={state.b} $change={onChange("b")} #3 />
-            <p key="3" #4>
-                <text #5>{parseInt(state.a) + parseInt(state.b)}</text>
-            </p>
-        </div>
-        */
-        let node_5 = new TextNode({
-            text: (parseInt(state.a) + parseInt(state.b)).toString(),
-        });
-        let node_4 = new HtmlNode({
-            elementType: "p",
-            properties: {
-                key: "3",
-            },
-            children: [
-                node_5,
-            ],
-        });
-        let node_3 = new HtmlNode({
-            nextSibling: node_4,
-            elementType: "input",
-            properties: {
-                key: "2",
-                type: "text",
-                value: state.b,
-                $input: onChange("b"),
-            },
-            children: [],
-        });
-        let node_2 = new HtmlNode({
-            nextSibling: node_3,
-            elementType: "input",
-            properties: {
-                key: "1",
-                type: "text",
-                value: state.a,
-                $input: onChange("a"),
-            },
-            children: [],
-        });
-        let node_1 = new HtmlNode({
-            elementType: "div",
-            properties: {
-                key: "root",
-            },
-            children: [
-                node_2,
-                node_3,
-                node_4,
-            ],
-        });
-
-        return node_1;
+    function onChange(name) {
+        return event => {
+            setInputState({
+                ...inputState,
+                [name]: event.target.value,
+            });
+        };
     }
 
-    return createNode;
+    /*
+    <div #1 key="root">
+        <input #2 key="1" type="text" value={inputState.a} $change={onChange("a")} />
+        <input #3 key="2" type="text" value={inputState.b} $change={onChange("b")} />
+        <p #4 key="3">
+            <text #5>{parseInt(inputState.a) + parseInt(inputState.b)}</text>
+        </p>
+    </div>
+    */
+    let node_5 = new TextNode({
+        text: (parseInt(inputState.a) + parseInt(inputState.b)).toString(),
+    });
+    let node_4 = new HtmlNode({
+        nextSibling: null,
+        elementType: "p",
+        properties: {
+            key: "3",
+        },
+        children: [
+            node_5,
+        ],
+    });
+    let node_3 = new HtmlNode({
+        nextSibling: node_4,
+        elementType: "input",
+        properties: {
+            key: "2",
+            type: "text",
+            value: inputState.b,
+            $input: onChange("b"),
+        },
+        children: [],
+    });
+    let node_2 = new HtmlNode({
+        nextSibling: node_3,
+        elementType: "input",
+        properties: {
+            key: "1",
+            type: "text",
+            value: inputState.a,
+            $input: onChange("a"),
+        },
+        children: [],
+    });
+    let node_1 = new HtmlNode({
+        nextSibling: null,
+        elementType: "div",
+        properties: {
+            key: "root",
+        },
+        children: [
+            node_2,
+            node_3,
+            node_4,
+        ],
+    });
+
+    return node_1;
 }
 
-function IncrementComponent({ updateNode }) {
-    let pressCount = 0;
+/*
+let component = new ComponentNode({
+    nextSibling: null,
+    componentFunction: IncrementComponent,
+    properties: {
+        key: "root",
+    },
+});
+*/
 
-    function createNode() {
-        /*
-        <div key="root" #1>
-            <p key="1" #2>
-                <text #3>{pressCount}</text>
-            </p>
-            <button key="2" onClick={() => { pressCount += 1; updateNode(); }} #4>
-                <text #5>Increment</text>
-            </button>
-        </div>
-        */
-        let node_5 = new TextNode({
-            text: "Increment",
-        })
-        let node_4 = new HtmlNode({
-            elementType: "button",
-            properties: {
-                key: "2",
-                $click: () => {
-                    pressCount += 1;
-                    updateNode();
-                },
-            },
-            children: [
-                node_5,
-            ],
-        });
-        let node_3 = new TextNode({
-            text: pressCount.toString(),
-        });
-        let node_2 = new HtmlNode({
-            nextSibling: node_4,
-            elementType: "p",
-            properties: {
-                key: "1",
-            },
-            children: [
-                node_3,
-            ],
-        });
-        let node_1 = new HtmlNode({
-            elementType: "div",
-            properties: {
-                key: "root",
-            },
-            children: [
-                node_2,
-                node_4,
-            ],
-        });
-
-        return node_1;
-    }
-
-    return createNode;
-}
+let component = new ComponentNode({
+    nextSibling: null,
+    componentFunction: CalculatorComponent,
+    properties: {
+        key: "root",
+    },
+});
 
 new Instance()
     .mount(
         document.getElementById("root"),
-        new ComponentNode({
-            nextSibling: null,
-            componentFunction: NewIncrementComponent,
-            properties: {
-                key: "root",
-            },
-        }),
+        component,
     );
