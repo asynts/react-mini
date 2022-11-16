@@ -94,6 +94,16 @@
 
     This confirms that this got something to do with event handling.
 
+-   Somehow, `HtmlElement.updateElement` is called very frequently.
+
+-   Somehow, `HtmlElement.eventHandlers` is always empty in `HtmlElement.updateElement`.
+
+-   My understanding is, that this is exponential, because all the previous event handlers fire.
+    Each then adds a new event handler which fire again...
+
+    The problem is, that they are never removed because I am looking at the `HtmlElement.eventHandlers`
+    of the previous event handler.
+
 ### Ideas
 
 -   Look where the fibonacci numbers appear naturally.
@@ -103,3 +113,12 @@
 ### Theories
 
 -   I suspect that the event continues to bubble after we modified the DOM.
+
+-   I suspect, that the old event handlers are still attached?
+    Maybe I am going through the wrong list?
+
+-   Maybe I am setting them again as regular attribute?
+
+### Result
+
+-   I am not actually sure what the underlying problem was but I solved it by getting rid of `HtmlElement.eventHandlers`.

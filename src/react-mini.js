@@ -1,3 +1,6 @@
+export const DEBUG_RENDER_MATCHING = false;
+export const DEBUG_RENDER_CHILDREN = false;
+
 export function ASSERT_NOT_REACHED() {
     debugger;
     throw new Error("ASSERT_NOT_REACHED");
@@ -19,7 +22,7 @@ Node {
     isEqual(otherNode: Node): boolean
 
     abstract createElement(): window.Element
-    abstract updateElement(oldRenderedElement: window.Element): window.Element
+    abstract updateElement(oldNode: Node): window.Element
     abstract removeElement(): void
 
     abstract renderChildren(oldFirstChild: Node): void
@@ -70,7 +73,7 @@ export class Node {
     }
 
     // Abstract.
-    updateElement({ oldRenderedElement }) {
+    updateElement({ oldNode }) {
         ASSERT_NOT_REACHED();
     }
 
@@ -120,9 +123,11 @@ export class Node {
         //     It doesn't happen for the root node because we create a fake element for that.
 
         let handle_DIRECT_MATCH = () => {
-            console.log("handle_DIRECT_MATCH");
+            if (DEBUG_RENDER_MATCHING) {
+                console.log("handle_DIRECT_MATCH");
+            }
 
-            this.updateElement({ oldRenderedElement: oldNode.renderedElement });
+            this.updateElement({ oldNode });
 
             let oldFirstChild;
             if (oldNode.children.length >= 1) {
@@ -137,7 +142,9 @@ export class Node {
         };
 
         let handle_SKIP_MATCH = () => {
-            console.log("handle_SKIP_MATCH");
+            if (DEBUG_RENDER_MATCHING) {
+                console.log("handle_SKIP_MATCH");
+            }
 
             // Remove all the skipped elements.
             while (!this.isEqual(oldNode)) {
@@ -149,7 +156,9 @@ export class Node {
         };
 
         let handle_NO_MATCH = () => {
-            console.log("handle_NO_MATCH");
+            if (DEBUG_RENDER_MATCHING) {
+                console.log("handle_NO_MATCH");
+            }
 
             oldNode.renderedElement.parentElement.insertBefore(this.createElement(), oldNode.renderedElement);
 
@@ -166,7 +175,9 @@ export class Node {
         };
 
         let handle_NO_MATCH_NEW = () => {
-            console.log("handle_NO_MATCH_NEW");
+            if (DEBUG_RENDER_MATCHING) {
+                console.log("handle_NO_MATCH_NEW");
+            }
 
             // We do not have an 'oldNode' that we can use as an insertion point.
             // This only happens if the 'parentNode' was newly created.
@@ -203,7 +214,7 @@ export class Node {
 /*
 SentinelNode {
     createElement(): window.Element
-    updateElement(oldRenderedElement: window.Element): window.Element
+    updateElement(oldNode: SentinelNode): window.Element
     removeElement(): void
 
     renderChildren(oldFirstChild: Node): void
@@ -219,7 +230,7 @@ export class SentinelNode extends Node {
         ASSERT_NOT_REACHED();
     }
 
-    updateElement({ oldRenderedElement }) {
+    updateElement({ oldNode }) {
         // FIXME: How should we handle this?
         ASSERT_NOT_REACHED();
     }
@@ -242,7 +253,7 @@ TextNode {
     renderedElement: window.Element?
 
     createElement(): window.Element
-    updateElement(oldRenderedElement: window.Element): window.Element
+    updateElement(oldNode: TextNode): window.Element
     removeElement(): void
 
     renderChildren(oldFirstChild: Node): void
@@ -266,8 +277,8 @@ export class TextNode extends Node {
         return this.renderedElement;
     }
 
-    updateElement({ oldRenderedElement }) {
-        this.renderedElement = oldRenderedElement;
+    updateElement({ oldNode }) {
+        this.renderedElement = oldNode.renderedElement;
 
         ASSERT(this.renderedElement.nodeName === "#text");
         this.renderedElement.nodeValue = this.text;
@@ -293,7 +304,7 @@ HtmlNode : Node {
     renderedElement: window.Element?
 
     createElement(): window.Element
-    updateElement(oldRenderedElement: window.Element): window.Element
+    updateElement(oldNode: HtmlNode): window.Element
     removeElement(): void
 
     renderChildren(oldFirstChild: Node): void
@@ -313,44 +324,29 @@ export class HtmlNode extends Node {
         } else {
             this.renderedElement = null;
         }
-
-        this.eventHandlers = {};
     }
 
     createElement() {
         this.renderedElement = document.createElement(this.elementType);
 
-        // Set all the attributes.
-        for (let [propertyName, propertyValue] of Object.entries(this.properties)) {
-            if (propertyName === "$onClick") {
-                this.renderedElement.addEventListener("click", propertyValue);
-                
-                ASSERT(false == "$onClick" in this.eventHandlers);
-                this.eventHandlers["$onClick"] = propertyValue;
-            } else {
-                ASSERT(!propertyName.startsWith("$"));
-                ASSERT(typeof propertyValue === "string" || propertyValue instanceof String);
-                this.renderedElement.setAttribute(propertyName, propertyValue);    
-            }
-        }
+        this._setPropertiesOnRenderedElement();
 
         return this.renderedElement;
     }
 
-    updateElement({ oldRenderedElement }) {
-        this.renderedElement = oldRenderedElement;
+    updateElement({ oldNode }) {
+        this.renderedElement = oldNode.renderedElement;
 
         ASSERT(this.renderedElement.nodeName === this.elementType);
 
-        // Remove all event listeners.
-        for (let [eventName, handler] in this.eventHandlers) {
-            if (eventName === "$onClick") {
-                this.renderedElement.removeEventListener(eventName, handler);
-            } else {
-                ASSERT_NOT_REACHED();
+        // Remove all previous event listeners.
+        // Notice that we are iterating through the old node.
+        for (let [propertyName, propertyValue] of Object.entries(oldNode.properties)) {
+            if (propertyName.startsWith("$")) {
+                let eventName = propertyName.replace("$", "");
+                oldNode.renderedElement.removeEventListener(eventName, propertyValue);
             }
         }
-        this.eventHandlers = {};
 
         // Remove attributes that do not appear in this node.
         for (let propertyName of Object.keys(this.renderedElement.attributes)) {
@@ -359,17 +355,8 @@ export class HtmlNode extends Node {
             }
         }
 
-        // Update all attributes to match.
-        for (let [propertyName, propertyValue] of Object.entries(this.properties)) {
-            // FIXME: Redundant code.
-            if (propertyName === "$onClick") {
-                this.renderedElement.addEventListener("click", propertyValue);
-                this.eventHandlers["$onClick"] = propertyValue;
-            } else {
-                ASSERT(!propertyName.startsWith("$"));
-                this.renderedElement.setAttribute(propertyName, propertyValue);
-            }
-        }
+        // Update all the attributes.
+        this._setPropertiesOnRenderedElement();
 
         return this.renderedElement;
     }
@@ -380,13 +367,17 @@ export class HtmlNode extends Node {
     }
 
     renderChildren({ oldFirstChild }) {
-        console.log("HtmlNode.renderChilden", oldFirstChild);
+        if (DEBUG_RENDER_CHILDREN) {
+            console.log("HtmlNode.renderChilden", oldFirstChild);
+        }
 
         let oldNextChild = oldFirstChild
 
         // Render the children.
         for (let child of this.children) {
-            console.log("-> render", child, oldNextChild);
+            if (DEBUG_RENDER_CHILDREN) {
+                console.log("-> render", child, oldNextChild);
+            }
             oldNextChild = child.render({
                 oldNode: oldNextChild,
                 parentElement: this.renderedElement,
@@ -395,9 +386,25 @@ export class HtmlNode extends Node {
 
         // Remove trailing elements
         while (oldNextChild !== null) {
-            console.log("-> remove", oldNextChild);
+            if (DEBUG_RENDER_CHILDREN) {
+                console.log("-> remove", oldNextChild);
+            }
             oldNextChild.removeElement();
             oldNextChild = oldNextChild.nextSibling;
+        }
+    }
+
+    _setPropertiesOnRenderedElement() {
+        for (let [propertyName, propertyValue] of Object.entries(this.properties)) {
+            if (propertyName.startsWith("$")) {
+                // Event handlers.
+                let eventName = propertyName.replace("$", "");
+                this.renderedElement.addEventListener(eventName, propertyValue);
+            } else {
+                // Regular attributes.
+                ASSERT(typeof propertyValue === "string" || propertyValue instanceof String);
+                this.renderedElement.setAttribute(propertyName, propertyValue);
+            }
         }
     }
 }
@@ -425,7 +432,6 @@ export class Instance {
         });
 
         // Render.
-        console.log("initial render:");
         newNode.render({
             oldNode,
             parentElement: null,

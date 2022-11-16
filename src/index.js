@@ -24,7 +24,7 @@ function createNode() {
         elementType: "button",
         properties: {
             key: "2",
-            $onClick: () => {
+            $click: () => {
                 pressCount += 1;
                 update();
             },
