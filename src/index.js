@@ -2,7 +2,7 @@ import {
     Instance,
     TextNode,
     HtmlNode,
-} from "./react.js";
+} from "./react-mini.js";
 
 let pressCount = 0;
 
