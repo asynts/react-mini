@@ -9,7 +9,7 @@ function IncrementComponent({ useState, state }) {
     let [counter, setCounter] = useState("counter", 0);
 
     /*
-    <div #1 key="root">
+    <div #1 key="root" class="component">
         <p #2 key="1">
             <text #3>{counter}</text>
         </p>
@@ -50,6 +50,7 @@ function IncrementComponent({ useState, state }) {
         elementType: "div",
         properties: {
             key: "root",
+            class: "component",
         },
         children: [
             node_2,
@@ -76,7 +77,7 @@ function CalculatorComponent({ state, useState }) {
     }
 
     /*
-    <div #1 key="root">
+    <div #1 key="root" class="component">
         <input #2 key="1" type="text" value={inputState.a} $change={onChange("a")} />
         <input #3 key="2" type="text" value={inputState.b} $change={onChange("b")} />
         <p #4 key="3">
@@ -124,6 +125,7 @@ function CalculatorComponent({ state, useState }) {
         elementType: "div",
         properties: {
             key: "root",
+            class: "component",
         },
         children: [
             node_2,
@@ -137,7 +139,7 @@ function CalculatorComponent({ state, useState }) {
 
 function MainComponent({ state, useState }) {
     /*
-    <div #1 key="root">
+    <div #1 key="root" class="component">
         <CalculatorComponent #2 key="1" />
         <IncrementComponent #3 key="2" />
         <CalculatorComponent #4 key="3" />
@@ -170,6 +172,7 @@ function MainComponent({ state, useState }) {
         elementType: "div",
         properties: {
             key: "root",
+            class: "component",
         },
         children: [
             node_2,
