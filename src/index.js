@@ -10,6 +10,9 @@ function IncrementComponent({ properties, useState }) {
 
     /*
     <div #1 key="root" class="component">
+        <h3 #1.1 key="0">
+            <text #1.2 key="1">Increment Component</text>
+        </h3>
         <p #2 key="1">
             <text #3 key="1">{counter}</text>
         </p>
@@ -49,6 +52,21 @@ function IncrementComponent({ properties, useState }) {
             node_3,
         ],
     });
+    let node_1_2 = new TextNode({
+        text: "Increment Component",
+        properties: {
+            key: "1",
+        },
+    });
+    let node_1_1 = new HtmlNode({
+        elementType: "h3",
+        properties: {
+            key: "0",
+        },
+        children: [
+            node_1_2,
+        ],
+    });
     let node_1 = new HtmlNode({
         elementType: "div",
         properties: {
@@ -56,6 +74,7 @@ function IncrementComponent({ properties, useState }) {
             class: "component",
         },
         children: [
+            node_1_1,
             node_2,
             node_4,
         ],
@@ -81,6 +100,9 @@ function CalculatorComponent({ properties, useState }) {
 
     /*
     <div #1 key="root" class="component">
+        <h3 #1.1 key="0">
+            <text #1.2 key="1">Calculator Component</text>
+        </h3>
         <input #2 key="1" type="text" value={inputState.a} $change={onChange("a")} />
         <input #3 key="2" type="text" value={inputState.b} $change={onChange("b")} />
         <p #4 key="3">
@@ -123,6 +145,21 @@ function CalculatorComponent({ properties, useState }) {
         },
         children: [],
     });
+    let node_1_2 = new TextNode({
+        text: "Calculator Component",
+        properties: {
+            key: "1",
+        },
+    });
+    let node_1_1 = new HtmlNode({
+        elementType: "h3",
+        properties: {
+            key: "0",
+        },
+        children: [
+            node_1_2,
+        ],
+    });
     let node_1 = new HtmlNode({
         elementType: "div",
         properties: {
@@ -130,6 +167,7 @@ function CalculatorComponent({ properties, useState }) {
             class: "component",
         },
         children: [
+            node_1_1,
             node_2,
             node_3,
             node_4,
@@ -205,6 +243,10 @@ function ListComponent({ properties, useState }) {
 
     /*
     <div #1 key="root" class="component">
+        <h3 #1.1 key="0">
+            <text #1.2 key="1">List Component</text>
+        </h3>
+
         <div #2 key="1">
             {...createInnerNode(0)}
         </div>
@@ -239,6 +281,21 @@ function ListComponent({ properties, useState }) {
             ...items.map(createInnerNode),
         ],
     });
+    let node_1_2 = new TextNode({
+        text: "List Component",
+        properties: {
+            key: "1",
+        },
+    });
+    let node_1_1 = new HtmlNode({
+        elementType: "h3",
+        properties: {
+            key: "0",
+        },
+        children: [
+            node_1_2,
+        ],
+    });
     let node_1 = new HtmlNode({
         elementType: "div",
         properties: {
@@ -246,6 +303,7 @@ function ListComponent({ properties, useState }) {
             class: "component",
         },
         children: [
+            node_1_1,
             node_2,
             node_3,
         ],
@@ -259,6 +317,10 @@ function ConditionComponent({ properties, useState }) {
 
     /*
     <div #1 key="root" class="component">
+        <h3 #1.1 key="0">
+            <text #1.2 key="1">Condition Component</text>
+        </h3>
+
         {visible &&
             <p #2 key="1">
                 <text #3 key="1">This is not always visible!</text>
@@ -299,6 +361,21 @@ function ConditionComponent({ properties, useState }) {
             node_3,
         ],
     });
+    let node_1_2 = new TextNode({
+        text: "Condition Component",
+        properties: {
+            key: "1",
+        },
+    });
+    let node_1_1 = new HtmlNode({
+        elementType: "h3",
+        properties: {
+            key: "0",
+        },
+        children: [
+            node_1_2,
+        ],
+    });
     let node_1 = new HtmlNode({
         elementType: "div",
         properties: {
@@ -306,6 +383,7 @@ function ConditionComponent({ properties, useState }) {
             class: "component",
         },
         children: [
+            node_1_1,
             ...(visible ? [node_2] : []),
             node_4,
         ],
@@ -318,6 +396,9 @@ function ConditionComponent({ properties, useState }) {
 function PropertyComponent({ properties, useState }) {
     /*
     <div #1 key="root" class="component">
+        <h3 #1.1 key="0">
+            <text #1.2 key="1">Property Component</text>
+        </h3>
         <text #2 key="1">Was called with exampleProperty='{properties.exampleProperty}'</text>
     </div>
     */
@@ -328,6 +409,21 @@ function PropertyComponent({ properties, useState }) {
             key: "1",
         },
     });
+    let node_1_2 = new TextNode({
+        text: "Property Component",
+        properties: {
+            key: "1",
+        },
+    });
+    let node_1_1 = new HtmlNode({
+        elementType: "h3",
+        properties: {
+            key: "0",
+        },
+        children: [
+            node_1_2,
+        ],
+    });
     let node_1 = new HtmlNode({
         elementType: "div",
         properties: {
@@ -335,6 +431,7 @@ function PropertyComponent({ properties, useState }) {
             class: "component",
         },
         children: [
+            node_1_1,
             node_2,
         ],
     });
@@ -345,6 +442,9 @@ function PropertyComponent({ properties, useState }) {
 function MainComponent({ properties, useState }) {
     /*
     <div #1 key="root" class="component">
+        <h3 #1.1 key="0">
+            <text #1.2 key="1">Main Component</text>
+        </h3>
         <CalculatorComponent #2 key="1" />
         <IncrementComponent #3 key="2" />
         <CalculatorComponent #4 key="3" />
@@ -391,6 +491,21 @@ function MainComponent({ properties, useState }) {
             key: "1",
         },
     });
+    let node_1_2 = new TextNode({
+        text: "Main Component",
+        properties: {
+            key: "1",
+        },
+    });
+    let node_1_1 = new HtmlNode({
+        elementType: "h3",
+        properties: {
+            key: "0",
+        },
+        children: [
+            node_1_2,
+        ],
+    });
     let node_1 = new HtmlNode({
         elementType: "div",
         properties: {
@@ -398,6 +513,7 @@ function MainComponent({ properties, useState }) {
             class: "component",
         },
         children: [
+            node_1_1,
             node_2,
             node_3,
             node_4,
