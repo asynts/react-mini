@@ -5,7 +5,7 @@ import {
     ComponentNode,
 } from "./react-mini.js";
 
-function IncrementComponent({ useState, state }) {
+function IncrementComponent({ useState }) {
     let [counter, setCounter] = useState("counter", 0);
 
     /*
@@ -61,7 +61,7 @@ function IncrementComponent({ useState, state }) {
     return node_1;
 }
 
-function CalculatorComponent({ state, useState }) {
+function CalculatorComponent({ useState }) {
     let [inputState, setInputState] = useState("inputState", {
         a: "",
         b: "",
@@ -137,17 +137,158 @@ function CalculatorComponent({ state, useState }) {
     return node_1;
 }
 
-function MainComponent({ state, useState }) {
+function ListComponent({ useState }) {
+    let [items, setItems] = useState("items", []);
+
+    function removeItem(index) {
+        let newItems = [
+            ...items.slice(0, index),
+            ...items.slice(index + 1)
+        ];
+        setItems(newItems);
+    }
+
+    function appendNewItem() {
+        let newItems = [
+            ...items,
+            (items.length + 1).toString()
+        ];
+        setItems(newItems);
+    }
+
+    function createInnerNode(index) {
+        if (index >= items.length) {
+            return [];
+        }
+        let item = items[index];
+
+        // Recursively construct the following nodes.
+        // We need to construct them first to be able to set 'nextSibling'.
+        let followingItemNodes = createInnerNode(index + 1);
+
+        let nextSibling;
+        if (followingItemNodes.length >= 1) {
+            nextSibling = followingItemNodes[followingItemNodes.length - 1];
+        } else {
+            nextSibling = null;
+        }
+
+        /*
+        <div #1 key={index.toString()}>
+            <text #2>{item}</text>
+            <button #3 key="2" $click={() => removeItem(index)}>
+                <text #4>X</text>
+            </button>
+        </div>
+        */
+        let node_4 = new TextNode({
+            nextSibling: null,
+            text: "X",
+        });
+        let node_3 = new HtmlNode({
+            nextSibling: null,
+            elementType: "button",
+            properties: {
+                key: "2",
+                $click: () => removeItem(index),
+            },
+            children: [
+                node_4,
+            ],
+        });
+        let node_2 = new TextNode({
+            nextSibling: node_3,
+            text: item,
+        });
+        let node_1 = new HtmlNode({
+            nextSibling: nextSibling,
+
+            elementType: "div",
+            properties: {
+                key: index.toString(),
+            },
+            children: [
+                node_2,
+                node_3,
+            ],
+        });
+
+        return [node_1, ...followingItemNodes];
+    }
+
+    /*
+    <div #1 key="root" class="component">
+        <div #2 key="1">
+            {...createInnerNode(0)}
+        </div>
+
+        <button #3 key="2" $click={() => appendNewItem()}>
+            <text #4>Append New</text>
+        </button>
+    </div>
+    */
+    let node_4 = new TextNode({
+        nextSibling: null,
+        text: "Append New",
+    });
+    let node_3 = new HtmlNode({
+        nextSibling: null,
+        elementType: "button",
+        properties: {
+            key: "2",
+            $click: () => appendNewItem(),
+        },
+        children: [
+            node_4,
+        ],
+    });
+    let node_2 = new HtmlNode({
+        nextSibling: node_3,
+        elementType: "div",
+        properties: {
+            key: "1",
+        },
+        children: [
+            ...createInnerNode(0),
+        ],
+    });
+    let node_1 = new HtmlNode({
+        nextSibling: null,
+        elementType: "div",
+        properties: {
+            key: "root",
+            class: "component",
+        },
+        children: [
+            node_2,
+            node_3,
+        ],
+    });
+
+    console.log(createInnerNode(0));
+
+    return node_1;
+}
+
+function MainComponent({ useState }) {
     /*
     <div #1 key="root" class="component">
         <CalculatorComponent #2 key="1" />
         <IncrementComponent #3 key="2" />
         <CalculatorComponent #4 key="3" />
+        <ListComponent #4 key="4" />
     </div>
     */
 
-    let node_4 = new ComponentNode({
+    let node_5 = new ComponentNode({
         nextSibling: null,
+        componentFunction: ListComponent,
+        properties: {
+            key: "3",
+        },
+    });
+    let node_4 = new ComponentNode({
+        nextSibling: node_5,
         componentFunction: CalculatorComponent,
         properties: {
             key: "3",
@@ -178,6 +319,7 @@ function MainComponent({ state, useState }) {
             node_2,
             node_3,
             node_4,
+            node_5,
         ],
     });
 

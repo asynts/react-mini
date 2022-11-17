@@ -358,7 +358,6 @@ export class ComponentNode extends Node {
         ASSERT(this.innerNode === null);
         this.innerNode = this.componentFunction({
             useState: this.useState.bind(this),
-            state: this.state,
         });
     }
 }
