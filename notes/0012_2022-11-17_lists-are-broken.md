@@ -35,6 +35,34 @@
 
     Luckily, it still reproduces the issue, we crash now.
 
-### Theories
+-   It seems that the `items` list is updated correctly.
+    This is a rendering issue.
 
--   Verify that all the `nextSibling` members are set correctly.
+-   It appears that `nextSibling` is set incorrectly.
+    There are three children before we remove the second one.
+
+    ```none
+    # actual
+    [0].nextSibling = [2]
+    [0].nextSibling.nextSibling == null
+    # expected
+    [0].nextSibling = [1]
+    [0].nextSibling.nextSibling = [2]
+    [0].nextSibling.nextSibling.nextSibling = null
+    ```
+
+-   The problem was that I wrote:
+
+    ```js
+    nextSibling = followingItemNodes[followingItemNodes.length - 1];
+    ```
+
+    Instead of:
+
+    ```js
+    nextSibling = followingItemNodes[0];
+    ```
+
+### Ideas
+
+### Theories

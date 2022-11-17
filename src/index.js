@@ -168,7 +168,7 @@ function ListComponent({ useState }) {
 
         let nextSibling;
         if (followingItemNodes.length >= 1) {
-            nextSibling = followingItemNodes[followingItemNodes.length - 1];
+            nextSibling = followingItemNodes[0];
         } else {
             nextSibling = null;
         }
@@ -265,7 +265,7 @@ function ListComponent({ useState }) {
         ],
     });
 
-    console.log(createInnerNode(0));
+    console.log(items, node_2);
 
     return node_1;
 }
