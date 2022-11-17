@@ -151,7 +151,7 @@ function ListComponent({ useState }) {
     function appendNewItem() {
         let newItems = [
             ...items,
-            (items.length + 1).toString()
+            Math.floor(Math.random() * 1000000).toString(),
         ];
         setItems(newItems);
     }
@@ -174,7 +174,7 @@ function ListComponent({ useState }) {
         }
 
         /*
-        <div #1 key={index.toString()}>
+        <div #1 key={item}>
             <text #2>{item}</text>
             <button #3 key="2" $click={() => removeItem(index)}>
                 <text #4>X</text>
@@ -205,7 +205,7 @@ function ListComponent({ useState }) {
 
             elementType: "div",
             properties: {
-                key: index.toString(),
+                key: item,
             },
             children: [
                 node_2,

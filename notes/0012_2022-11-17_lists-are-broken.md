@@ -30,4 +30,11 @@
 -   Now I encounter a new crash if I remove an element in the middle.
     My understanding is, that this should work, but it doesn't do what I want it to do.
 
+    The code has been updated and I now use a random integer instead of the index.
+    Thus if I remove an element in the middle, this actually makes sense.
+
+    Luckily, it still reproduces the issue, we crash now.
+
 ### Theories
+
+-   Verify that all the `nextSibling` members are set correctly.
