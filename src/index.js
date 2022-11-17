@@ -5,7 +5,7 @@ import {
     ComponentNode,
 } from "./react-mini.js";
 
-function IncrementComponent({ useState }) {
+function IncrementComponent({ properties, useState }) {
     let [counter, setCounter] = useState("counter", 0);
 
     /*
@@ -64,7 +64,7 @@ function IncrementComponent({ useState }) {
     return node_1;
 }
 
-function CalculatorComponent({ useState }) {
+function CalculatorComponent({ properties, useState }) {
     let [inputState, setInputState] = useState("inputState", {
         a: "",
         b: "",
@@ -139,7 +139,7 @@ function CalculatorComponent({ useState }) {
     return node_1;
 }
 
-function ListComponent({ useState }) {
+function ListComponent({ properties, useState }) {
     let [items, setItems] = useState("items", []);
 
     function removeItem(index) {
@@ -254,7 +254,7 @@ function ListComponent({ useState }) {
     return node_1;
 }
 
-function ConditionComponent({ useState }) {
+function ConditionComponent({ properties, useState }) {
     let [visible, setVisible] = useState("visible", true);
 
     /*
@@ -315,7 +315,34 @@ function ConditionComponent({ useState }) {
     return node_1;
 }
 
-function MainComponent({ useState }) {
+function PropertyComponent({ properties, useState }) {
+    /*
+    <div #1 key="root" class="component">
+        <text #2 key="1">Was called with exampleProperty='{properties.exampleProperty}'</text>
+    </div>
+    */
+
+    let node_2 = new TextNode({
+        text: `Was called with exampleProperty='${properties.exampleProperty}'`,
+        properties: {
+            key: "1",
+        },
+    });
+    let node_1 = new HtmlNode({
+        elementType: "div",
+        properties: {
+            key: "root",
+            class: "component",
+        },
+        children: [
+            node_2,
+        ],
+    });
+
+    return node_1;
+}
+
+function MainComponent({ properties, useState }) {
     /*
     <div #1 key="root" class="component">
         <CalculatorComponent #2 key="1" />
@@ -323,8 +350,17 @@ function MainComponent({ useState }) {
         <CalculatorComponent #4 key="3" />
         <ListComponent #5 key="4" />
         <ConditionComponent #6 key="5" />
+        <PropertyComponent #7 key="6" exampleProperty="foo" />
     </div>
     */
+
+    let node_7 = new ComponentNode({
+        componentFunction: PropertyComponent,
+        properties: {
+            key: "6",
+            exampleProperty: "foo",
+        },
+    });
     let node_6 = new ComponentNode({
         componentFunction: ConditionComponent,
         properties: {
@@ -367,6 +403,7 @@ function MainComponent({ useState }) {
             node_4,
             node_5,
             node_6,
+            node_7,
         ],
     });
 

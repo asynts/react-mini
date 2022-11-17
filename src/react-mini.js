@@ -279,6 +279,7 @@ export class ComponentNode extends Node {
         // Run the component function.
         ASSERT(this.innerNode === null);
         this.innerNode = this.componentFunction({
+            properties: this.properties,
             useState: this.useState.bind(this),
         });
     }
