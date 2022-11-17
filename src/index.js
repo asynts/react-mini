@@ -22,7 +22,6 @@ function IncrementComponent({ useState }) {
         text: "Increment",
     });
     let node_4 = new HtmlNode({
-        nextSibling: null,
         elementType: "button",
         properties: {
             key: "2",
@@ -36,7 +35,6 @@ function IncrementComponent({ useState }) {
         text: `${counter}`,
     });
     let node_2 = new HtmlNode({
-        nextSibling: node_4,
         elementType: "p",
         properties: {
             key: "1",
@@ -46,7 +44,6 @@ function IncrementComponent({ useState }) {
         ],
     });
     let node_1 = new HtmlNode({
-        nextSibling: null,
         elementType: "div",
         properties: {
             key: "root",
@@ -89,7 +86,6 @@ function CalculatorComponent({ useState }) {
         text: (parseInt(inputState.a) + parseInt(inputState.b)).toString(),
     });
     let node_4 = new HtmlNode({
-        nextSibling: null,
         elementType: "p",
         properties: {
             key: "3",
@@ -99,7 +95,6 @@ function CalculatorComponent({ useState }) {
         ],
     });
     let node_3 = new HtmlNode({
-        nextSibling: node_4,
         elementType: "input",
         properties: {
             key: "2",
@@ -110,7 +105,6 @@ function CalculatorComponent({ useState }) {
         children: [],
     });
     let node_2 = new HtmlNode({
-        nextSibling: node_3,
         elementType: "input",
         properties: {
             key: "1",
@@ -121,7 +115,6 @@ function CalculatorComponent({ useState }) {
         children: [],
     });
     let node_1 = new HtmlNode({
-        nextSibling: null,
         elementType: "div",
         properties: {
             key: "root",
@@ -156,23 +149,7 @@ function ListComponent({ useState }) {
         setItems(newItems);
     }
 
-    function createInnerNode(index) {
-        if (index >= items.length) {
-            return [];
-        }
-        let item = items[index];
-
-        // Recursively construct the following nodes.
-        // We need to construct them first to be able to set 'nextSibling'.
-        let followingItemNodes = createInnerNode(index + 1);
-
-        let nextSibling;
-        if (followingItemNodes.length >= 1) {
-            nextSibling = followingItemNodes[0];
-        } else {
-            nextSibling = null;
-        }
-
+    function createInnerNode(item, index) {
         /*
         <div #1 key={item}>
             <text #2>{item}</text>
@@ -182,11 +159,9 @@ function ListComponent({ useState }) {
         </div>
         */
         let node_4 = new TextNode({
-            nextSibling: null,
             text: "X",
         });
         let node_3 = new HtmlNode({
-            nextSibling: null,
             elementType: "button",
             properties: {
                 key: "2",
@@ -197,12 +172,9 @@ function ListComponent({ useState }) {
             ],
         });
         let node_2 = new TextNode({
-            nextSibling: node_3,
             text: item,
         });
         let node_1 = new HtmlNode({
-            nextSibling: nextSibling,
-
             elementType: "div",
             properties: {
                 key: item,
@@ -213,7 +185,7 @@ function ListComponent({ useState }) {
             ],
         });
 
-        return [node_1, ...followingItemNodes];
+        return node_1;
     }
 
     /*
@@ -228,11 +200,9 @@ function ListComponent({ useState }) {
     </div>
     */
     let node_4 = new TextNode({
-        nextSibling: null,
         text: "Append New",
     });
     let node_3 = new HtmlNode({
-        nextSibling: null,
         elementType: "button",
         properties: {
             key: "2",
@@ -243,17 +213,15 @@ function ListComponent({ useState }) {
         ],
     });
     let node_2 = new HtmlNode({
-        nextSibling: node_3,
         elementType: "div",
         properties: {
             key: "1",
         },
         children: [
-            ...createInnerNode(0),
+            ...items.map(createInnerNode),
         ],
     });
     let node_1 = new HtmlNode({
-        nextSibling: null,
         elementType: "div",
         properties: {
             key: "root",
@@ -264,8 +232,6 @@ function ListComponent({ useState }) {
             node_3,
         ],
     });
-
-    console.log(items, node_2);
 
     return node_1;
 }
@@ -281,35 +247,30 @@ function MainComponent({ useState }) {
     */
 
     let node_5 = new ComponentNode({
-        nextSibling: null,
         componentFunction: ListComponent,
         properties: {
             key: "3",
         },
     });
     let node_4 = new ComponentNode({
-        nextSibling: node_5,
         componentFunction: CalculatorComponent,
         properties: {
             key: "3",
         },
     });
     let node_3 = new ComponentNode({
-        nextSibling: node_4,
         componentFunction: IncrementComponent,
         properties: {
             key: "2",
         },
     });
     let node_2 = new ComponentNode({
-        nextSibling: node_3,
         componentFunction: CalculatorComponent,
         properties: {
             key: "1",
         },
     });
     let node_1 = new HtmlNode({
-        nextSibling: null,
         elementType: "div",
         properties: {
             key: "root",
@@ -327,7 +288,6 @@ function MainComponent({ useState }) {
 }
 
 let component = new ComponentNode({
-    nextSibling: null,
     componentFunction: MainComponent,
     properties: {
         key: "root",

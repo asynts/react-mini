@@ -14,38 +14,13 @@ export function ASSERT(condition) {
     }
 }
 
-/*
-// Each render reconciles with a tree of the previous render.
-// It also generates a new new tree that will be used by the next render.
-Node {
-    nextSibling: Node?
-
-    isEqual(otherNode: Node): boolean
-
-    abstract createElement(): window.Element
-    abstract updateElement({ oldNode: Node }): window.Element
-    abstract removeElement(): void
-
-    abstract getChildren(): list[Node]
-    abstract renderChildren({ oldFirstChild: Node }): void
-    render({ oldNode: Node, parentElement: window.Element }): Node
-}
-*/
 export class Node {
-    constructor({ nextSibling }) {
-        if (nextSibling !== undefined) {
-            this.nextSibling = nextSibling;
-        } else {
-            this.nextSibling = null;
-        }
+    constructor() {
+        // This will be updated by the constructor of the parent node.
+        this.nextSibling = null;
     }
 
     isEqual(otherNode) {
-        // Sentinel values indicate conditionally rendered elements.
-        if (otherNode instanceof SentinelNode || this instanceof SentinelNode) {
-            return true;
-        }
-
         // The type must match.
         if (this.constructor !== otherNode.constructor) {
             return false;
@@ -212,66 +187,9 @@ export class Node {
     }
 }
 
-/*
-SentinelNode {
-    createElement(): window.Element
-    updateElement({ oldNode: SentinelNode }): window.Element
-    removeElement(): void
-
-    getChildren(): list[Node]
-    renderChildren({ oldFirstChild: Node }): void
-}
-*/
-export class SentinelNode extends Node {
-    constructor({ nextSibling }) {
-        super({ nextSibling });
-    }
-
-    createElement() {
-        // FIXME: How should we handle this?
-        ASSERT_NOT_REACHED();
-    }
-
-    updateElement({ oldNode }) {
-        // FIXME: How should we handle this?
-        ASSERT_NOT_REACHED();
-    }
-
-    removeElement() {
-        // FIXME: How should we handle this?
-        ASSERT_NOT_REACHED();
-    }
-
-    getChildren() {
-        return [];
-    }
-
-    renderChildren({ oldFirstChild }) {
-        // Has no children.
-    }
-}
-
-/*
-ComponentNode : Node {
-    componentFunction: { state, useState } -> Node
-    properties: map[string, object]
-
-    state: map[string, object]?
-    innerNode: Node?
-
-    useState(key: String, defaultValue: object): any
-
-    createElement(): window.Element
-    updateElement({ oldNode: ComponentNode }): window.Element
-    removeElement(): void
-
-    getChildren(): list[Node]
-    renderChildren({ oldFirstChild: Node }): void
-}
-*/
 export class ComponentNode extends Node {
-    constructor({ nextSibling, componentFunction, properties }) {
-        super({ nextSibling })
+    constructor({ componentFunction, properties }) {
+        super()
 
         this.componentFunction = componentFunction;
         this.properties = properties;
@@ -292,10 +210,13 @@ export class ComponentNode extends Node {
 
             // Render this component with new state.
             let newNode = new ComponentNode({
-                nextSibling: this.nextSibling,
                 componentFunction: this.componentFunction,
                 properties: this.properties,
             });
+
+            // Manually set the 'nextSibling' since the parent node constructor won't run.
+            newNode.nextSibling = this.nextSibling;
+
             newNode.render({
                 oldNode: this,
                 parentElement: null,
@@ -362,22 +283,9 @@ export class ComponentNode extends Node {
     }
 }
 
-/*
-TextNode {
-    text: string
-    renderedElement: window.Element?
-
-    createElement(): window.Element
-    updateElement({ oldNode: TextNode }): window.Element
-    removeElement(): void
-
-    getChildren(): list[Node]
-    renderChildren({ oldFirstChild: Node }): void
-}
-*/
 export class TextNode extends Node {
-    constructor({ nextSibling, text, renderedElement }) {
-        super({ nextSibling });
+    constructor({ text, renderedElement }) {
+        super();
 
         this.text = text;
 
@@ -431,13 +339,22 @@ HtmlNode : Node {
 }
 */
 export class HtmlNode extends Node {
-    constructor({ nextSibling, elementType, properties, children, renderedElement }) {
-        super({ nextSibling });
+    constructor({ elementType, properties, children, renderedElement }) {
+        super();
 
         // This is important because this is what 'Element.nodeName' reports.
         this.elementType = elementType.toUpperCase();
 
+        // Update the 'nextSibling' of all child nodes.
+        for (let childIndex = 0; childIndex < children.length; ++childIndex) {
+            if (childIndex + 1 < children.length) {
+                children[childIndex].nextSibling = children[childIndex + 1];
+            } else {
+                children[childIndex].nextSibling = null;
+            }
+        }
         this.children = children;
+
         this.properties = properties;
 
         if (renderedElement !== undefined) {
