@@ -258,18 +258,18 @@ function ConditionComponent({ useState }) {
     let [visible, setVisible] = useState("visible", true);
 
     /*
-    <div #1 key="root class="component">
-        {visible && <p #2 key="1">
-                        <text #3 key="1">This is not always visible!</text>
-                    </p>}
+    <div #1 key="root" class="component">
+        {visible &&
+            <p #2 key="1">
+                <text #3 key="1">This is not always visible!</text>
+            </p>}
         <button #4 key="2" $click={() => setVisible(!visible)}>
             <text #5 key="1">Toggle Visibility</text>
         </button>
     </div>
     */
-
     let node_5 = new TextNode({
-        text: "Toggle Visibility",
+        text: "Toggle Visiblity",
         properties: {
             key: "1",
         },
@@ -287,7 +287,7 @@ function ConditionComponent({ useState }) {
     let node_3 = new TextNode({
         text: "This is not always visible",
         properties: {
-            key: "4", // FIXME: Setting this to "1" changes the issue.
+            key: "1",
         },
     });
     let node_2 = new HtmlNode({
@@ -303,6 +303,7 @@ function ConditionComponent({ useState }) {
         elementType: "div",
         properties: {
             key: "root",
+            class: "component",
         },
         children: [
             ...(visible ? [node_2] : []),
@@ -310,6 +311,7 @@ function ConditionComponent({ useState }) {
         ],
     });
 
+    console.log(node_1);
     return node_1;
 }
 
@@ -380,6 +382,6 @@ let component = new ComponentNode({
 
 new Instance()
     .mount(
-        document.getElementById("root"),
+        document.getElementById("root-container"),
         component,
     );

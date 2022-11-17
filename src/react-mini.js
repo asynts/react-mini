@@ -142,14 +142,9 @@ export class Node {
 
             oldNode.renderedElement.parentElement.insertBefore(this.createElement(), oldNode.renderedElement);
 
-            let oldFirstChild;
-            if (oldNode !== null && oldNode.getChildren().length >= 1) {
-                oldFirstChild = oldNode.getChildren()[0];
-            } else {
-                oldFirstChild = null;
-            }
-
-            this.renderChildren({ oldFirstChild });
+            this.renderChildren({
+                oldFirstChild: null,
+            });
 
             return oldNode;
         };
@@ -298,7 +293,7 @@ export class TextNode extends Node {
         ASSERT("key" in properties);
         this.properties = properties;
 
-        if (renderedElement === undefined) {
+        if (renderedElement !== undefined) {
             this.renderedElement = renderedElement;
         } else {
             this.renderedElement = null;
@@ -328,7 +323,7 @@ export class TextNode extends Node {
         return [];
     }
 
-    renderChildren() {
+    renderChildren({ oldFirstChild }) {
         // Has no children.
     }
 }
@@ -460,26 +455,10 @@ export class HtmlNode extends Node {
 }
 
 export class Instance {
-    mount(markerTargetElement, newNode) {
-        // We want the root element to be in a well defined state.
-        let oldElement = document.createElement("div");
-        oldElement.setAttribute("key", "root");
-        markerTargetElement.replaceWith(oldElement);
-
-        // Create the corresponding node.
-        let oldNode = new HtmlNode({
-            elementType: "div",
-            properties: {
-                key: "root",
-            },
-            children: [],
-            renderedElement: oldElement,
-        });
-
-        // Render.
+    mount(rootContainerElement, newNode) {
         newNode.render({
-            oldNode,
-            parentElement: null,
+            oldNode: null,
+            parentElement: rootContainerElement,
         });
     }
 }
