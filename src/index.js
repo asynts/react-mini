@@ -11,15 +11,18 @@ function IncrementComponent({ useState }) {
     /*
     <div #1 key="root" class="component">
         <p #2 key="1">
-            <text #3>{counter}</text>
+            <text #3 key="1">{counter}</text>
         </p>
         <button #4 key="2" onClick={() => setCounter(counter + 1)}>
-            <text #5>Increment</text>
+            <text #5 key="1">Increment</text>
         </button>
     </div>
     */
     let node_5 = new TextNode({
         text: "Increment",
+        properties: {
+            key: "1",
+        }
     });
     let node_4 = new HtmlNode({
         elementType: "button",
@@ -33,6 +36,9 @@ function IncrementComponent({ useState }) {
     });
     let node_3 = new TextNode({
         text: `${counter}`,
+        properties: {
+            key: "1",
+        }
     });
     let node_2 = new HtmlNode({
         elementType: "p",
@@ -78,12 +84,15 @@ function CalculatorComponent({ useState }) {
         <input #2 key="1" type="text" value={inputState.a} $change={onChange("a")} />
         <input #3 key="2" type="text" value={inputState.b} $change={onChange("b")} />
         <p #4 key="3">
-            <text #5>{parseInt(inputState.a) + parseInt(inputState.b)}</text>
+            <text #5 key="1">{parseInt(inputState.a) + parseInt(inputState.b)}</text>
         </p>
     </div>
     */
     let node_5 = new TextNode({
         text: (parseInt(inputState.a) + parseInt(inputState.b)).toString(),
+        properties: {
+            key: "1",
+        },
     });
     let node_4 = new HtmlNode({
         elementType: "p",
@@ -152,14 +161,17 @@ function ListComponent({ useState }) {
     function createInnerNode(item, index) {
         /*
         <div #1 key={item}>
-            <text #2>{item}</text>
+            <text #2 key="1">{item}</text>
             <button #3 key="2" $click={() => removeItem(index)}>
-                <text #4>X</text>
+                <text #4 key="1">X</text>
             </button>
         </div>
         */
         let node_4 = new TextNode({
             text: "X",
+            properties: {
+                key: "1",
+            },
         });
         let node_3 = new HtmlNode({
             elementType: "button",
@@ -173,6 +185,9 @@ function ListComponent({ useState }) {
         });
         let node_2 = new TextNode({
             text: item,
+            properties: {
+                key: "1",
+            },
         });
         let node_1 = new HtmlNode({
             elementType: "div",
@@ -195,12 +210,15 @@ function ListComponent({ useState }) {
         </div>
 
         <button #3 key="2" $click={() => appendNewItem()}>
-            <text #4>Append New</text>
+            <text #4 key="1">Append New</text>
         </button>
     </div>
     */
     let node_4 = new TextNode({
         text: "Append New",
+        properties: {
+            key: "1",
+        },
     });
     let node_3 = new HtmlNode({
         elementType: "button",

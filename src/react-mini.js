@@ -28,11 +28,15 @@ export class Node {
 
         switch(this.constructor) {
             case HtmlNode:
-            case ComponentNode:
                 return this.properties.key === otherNode.properties.key
                     && this.elementType === otherNode.elementType;
+
+            case ComponentNode:
+                return this.properties.key === otherNode.properties.key
+                    && this.componentFunction === otherNode.componentFunction;
+
             case TextNode:
-                return true;
+                return this.properties.key === otherNode.properties.key;
 
             default:
                 ASSERT_NOT_REACHED();
@@ -284,10 +288,12 @@ export class ComponentNode extends Node {
 }
 
 export class TextNode extends Node {
-    constructor({ text, renderedElement }) {
+    constructor({ text, properties, renderedElement }) {
         super();
 
         this.text = text;
+
+        this.properties = properties;
 
         if (renderedElement === undefined) {
             this.renderedElement = renderedElement;
@@ -324,20 +330,6 @@ export class TextNode extends Node {
     }
 }
 
-/*
-HtmlNode : Node {
-    elementType: string
-    properties: map[string, object]
-    children: list[Node]
-    renderedElement: window.Element?
-
-    createElement(): window.Element
-    updateElement({ oldNode: HtmlNode }): window.Element
-    removeElement(): void
-
-    renderChildren({ oldFirstChild: Node }): void
-}
-*/
 export class HtmlNode extends Node {
     constructor({ elementType, properties, children, renderedElement }) {
         super();
@@ -463,11 +455,6 @@ export class HtmlNode extends Node {
     }
 }
 
-/*
-Instance {
-    mount(targetElement: window.Element, node: Node): void
-}
-*/
 export class Instance {
     mount(markerTargetElement, newNode) {
         // We want the root element to be in a well defined state.
