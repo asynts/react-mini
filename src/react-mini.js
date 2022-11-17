@@ -196,6 +196,8 @@ export class ComponentNode extends Node {
         super()
 
         this.componentFunction = componentFunction;
+
+        ASSERT("key" in properties);
         this.properties = properties;
 
         this.state = null;
@@ -293,6 +295,7 @@ export class TextNode extends Node {
 
         this.text = text;
 
+        ASSERT("key" in properties);
         this.properties = properties;
 
         if (renderedElement === undefined) {
@@ -347,6 +350,7 @@ export class HtmlNode extends Node {
         }
         this.children = children;
 
+        ASSERT("key" in properties);
         this.properties = properties;
 
         if (renderedElement !== undefined) {
