@@ -196,120 +196,20 @@ function ListComponent({ properties, useState }) {
         setItems(newItems);
     }
 
-    function createInnerNode(item, index) {
-        /*
-        <div #1 key={item}>
-            <text #2 key="1">{item}</text>
-            <button #3 key="2" $click={() => removeItem(index)}>
-                <text #4 key="1">X</text>
-            </button>
+    return (
+        <div key={properties.key} class="component">
+            <h3 key="0">List Component</h3>
+            <div key="1">
+                {items.map((item, index) => (
+                    <div key={item}>
+                        {item}
+                        <button key="1" $click={() => removeItem(index)}>X</button>
+                    </div>
+                ))}
+            </div>
+            <button key="2" $click={() => appendNewItem()}>Append New</button>
         </div>
-        */
-        let node_4 = new TextNode({
-            text: "X",
-            properties: {
-                key: "1",
-            },
-        });
-        let node_3 = new HtmlNode({
-            elementType: "button",
-            properties: {
-                key: "2",
-                $click: () => removeItem(index),
-            },
-            children: [
-                node_4,
-            ],
-        });
-        let node_2 = new TextNode({
-            text: item,
-            properties: {
-                key: "1",
-            },
-        });
-        let node_1 = new HtmlNode({
-            elementType: "div",
-            properties: {
-                key: item,
-            },
-            children: [
-                node_2,
-                node_3,
-            ],
-        });
-
-        return node_1;
-    }
-
-    /*
-    <div #1 key="root" class="component">
-        <h3 #1.1 key="0">
-            <text #1.2 key="1">List Component</text>
-        </h3>
-
-        <div #2 key="1">
-            {...createInnerNode(0)}
-        </div>
-
-        <button #3 key="2" $click={() => appendNewItem()}>
-            <text #4 key="1">Append New</text>
-        </button>
-    </div>
-    */
-    let node_4 = new TextNode({
-        text: "Append New",
-        properties: {
-            key: "1",
-        },
-    });
-    let node_3 = new HtmlNode({
-        elementType: "button",
-        properties: {
-            key: "2",
-            $click: () => appendNewItem(),
-        },
-        children: [
-            node_4,
-        ],
-    });
-    let node_2 = new HtmlNode({
-        elementType: "div",
-        properties: {
-            key: "1",
-        },
-        children: [
-            ...items.map(createInnerNode),
-        ],
-    });
-    let node_1_2 = new TextNode({
-        text: "List Component",
-        properties: {
-            key: "1",
-        },
-    });
-    let node_1_1 = new HtmlNode({
-        elementType: "h3",
-        properties: {
-            key: "0",
-        },
-        children: [
-            node_1_2,
-        ],
-    });
-    let node_1 = new HtmlNode({
-        elementType: "div",
-        properties: {
-            key: "root",
-            class: "component",
-        },
-        children: [
-            node_1_1,
-            node_2,
-            node_3,
-        ],
-    });
-
-    return node_1;
+    );
 }
 
 function ConditionComponent({ properties, useState }) {
