@@ -1,9 +1,7 @@
-import {
-    Instance,
-} from "./react-mini.js";
+import { mount } from "./react-mini.js";
 
 function IncrementComponent({ properties, useState }) {
-    let [counter, setCounter] = useState("counter", 0);
+    let [counter, setCounter] = useState(0);
 
     return (
         <div key={properties.key} class="component">
@@ -15,7 +13,7 @@ function IncrementComponent({ properties, useState }) {
 }
 
 function CalculatorComponent({ properties, useState }) {
-    let [inputState, setInputState] = useState("inputState", {
+    let [inputState, setInputState] = useState({
         a: "",
         b: "",
     });
@@ -40,7 +38,7 @@ function CalculatorComponent({ properties, useState }) {
 }
 
 function ListComponent({ properties, useState }) {
-    let [items, setItems] = useState("items", []);
+    let [items, setItems] = useState([]);
 
     function removeItem(index) {
         let newItems = [
@@ -75,7 +73,7 @@ function ListComponent({ properties, useState }) {
 }
 
 function ConditionComponent({ properties, useState }) {
-    let [visible, setVisible] = useState("visible", true);
+    let [visible, setVisible] = useState(true);
 
     return (
         <div key={properties.key} class="component">
@@ -96,6 +94,21 @@ function PropertyComponent({ properties, useState }) {
     );
 }
 
+function MultipleStateComponent({ properties, useState }) {
+    let [a, setA] = useState(0);
+    let [b, setB] = useState(1);
+
+    return (
+        <div key={properties.key} class="component">
+            <h3 key="1">Multiple State Component</h3>
+            <p key="2">{a.toString()}</p>
+            <p key="3">{b.toString()}</p>
+            <button key="4" $click={() => setA(b)}>Set A=B</button>
+            <button key="5" $click={() => setB(b + 1)}>Set B=B+1</button>
+        </div>
+    );
+}
+
 function MainComponent({ properties, useState }) {
     return (
         <div key={properties.key} class="component">
@@ -107,12 +120,12 @@ function MainComponent({ properties, useState }) {
             <ListComponent key="5" />
             <ConditionComponent key="6" />
             <PropertyComponent key="7" exampleProperty="foo" />
+            <MultipleStateComponent key="8" />
         </div>
     );
 }
 
-new Instance()
-    .mount(
-        document.getElementById("root-container"),
-        <MainComponent key="root" />,
-    );
+mount(
+    document.getElementById("root-container"),
+    <MainComponent key="root" />,
+);

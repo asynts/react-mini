@@ -11,7 +11,6 @@ export default {
 
             jsx: true,
             jsxFactory: "jsx_createComponent",
-            jsxFragment: "jsx_createFragment",
         }),
     ],
 };

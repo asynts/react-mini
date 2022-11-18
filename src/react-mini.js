@@ -22,6 +22,17 @@ function isArray(value) {
     return Array.isArray(value);
 }
 
+// This is very similar to React, but we simplify a few things:
+//
+// -   We clearly distinguish between 'HtmlNode', 'TextNode' and 'ComponentNode'.
+//
+// -   Component nodes can not have children.
+//
+// -   Every 'HtmlNode' and 'ComponentNode' must have a 'key' property that is unique in the parent node.
+//     In React this can be provided but isn't mandatory.
+//
+// -   Many of the helper functions like 'useReducer' are missing.
+
 export class Node {
     constructor() {
         // This will be updated by the constructor of the parent node.
@@ -204,19 +215,24 @@ export class ComponentNode extends Node {
         ASSERT("key" in properties);
         this.properties = properties;
 
+        this.nextStateIndex = null;
         this.state = null;
+
         this.innerNode = null;
     }
 
-    useState(key, defaultValue) {
-        if (false === key in this.state) {
-            this.state[key] = defaultValue;
+    useState(defaultValue) {
+        // We use the call order to distinguish the data we are referring to.
+        ASSERT(this.nextStateIndex !== null)
+        let stateIndex = this.nextStateIndex++;
+
+        let value = defaultValue;
+        if (this.state[stateIndex] !== undefined) {
+            value = this.state[stateIndex];
         }
 
-        let value = this.state[key];
-
         function setValue(newValue) {
-            this.state[key] = newValue;
+            this.state[stateIndex] = newValue;
 
             // Render this component with new state.
             let newNode = new ComponentNode({
@@ -242,7 +258,7 @@ export class ComponentNode extends Node {
         }
 
         ASSERT(this.state === null);
-        this.state = {};
+        this.state = [];
 
         this._computeInnerNode();
 
@@ -287,6 +303,7 @@ export class ComponentNode extends Node {
     _computeInnerNode() {
         // Run the component function.
         ASSERT(this.innerNode === null);
+        this.nextStateIndex = 0;
         this.innerNode = this.componentFunction({
             properties: this.properties,
             useState: this.useState.bind(this),
@@ -461,6 +478,12 @@ export class HtmlNode extends Node {
     }
 }
 
+// We use esbuild to automatically compile JSX into calls to these functions:
+//
+//     cat input.jsx | esbuild --loader=jsx --jsx-factory=jsx_createComponent > output.js
+//
+// For this to work we need to accept the same syntax that 'React.createElement' uses.
+// By setting this on 'window' it will be accessible without import (if the module has been loaded.)
 window.jsx_createComponent = (type, properties, ...children) => {
     // The key property is mandatory.
     ASSERT("key" in properties);
@@ -493,12 +516,8 @@ window.jsx_createComponent = (type, properties, ...children) => {
         });
     }
 
-    // For components, the children are provided as property.
-    ASSERT(false === "children" in properties);
-    properties = {
-        ...properties,
-        children: processedChildren,
-    };
+    // FIXME: We do not support children for component elements.
+    ASSERT(processedChildren.length === 0);
 
     // Otherwise, we have a component node.
     return new ComponentNode({
@@ -507,16 +526,9 @@ window.jsx_createComponent = (type, properties, ...children) => {
     });
 };
 
-window.jsx_createFragment = (type, properties, children) => {
-    // We do not support fragments at the moment.
-    ASSERT_NOT_REACHED();
-};
-
-export class Instance {
-    mount(rootContainerElement, newNode) {
-        newNode.render({
-            oldNode: null,
-            parentElement: rootContainerElement,
-        });
-    }
+export function mount(rootContainerElement, newNode) {
+    newNode.render({
+        oldNode: null,
+        parentElement: rootContainerElement,
+    });
 }
