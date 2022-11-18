@@ -318,7 +318,7 @@ function ConditionComponent({ properties, useState }) {
     return (
         <div key={properties.key} class="component">
             <h3 key="1">Condition Component</h3>
-            {visible ? [<p key="2">This is not always visible</p>] : []}
+            {visible && <p key="2">This is not always visible</p>}
             <button key="3" $click={() => setVisible(!visible)}>Toggle Visibility</button>
         </div>
     );

@@ -468,28 +468,31 @@ window.jsx_createComponent = (type, properties, ...children) => {
     ASSERT("key" in properties);
 
     let processedChildren = [];
+    let nextChildIndex = 0;
+    function processChild(child) {
+        // Skip placeholder values created by use of '&&' or '||'.
+        if (child === null || child === false || child === true) {
+            return;
+        }
 
-    function processChild(child, childIndex) {
         if (isString(child)) {
-            return new TextNode({
-                text: child,
-                properties: {
-                    key: `auto_${childIndex}`,
-                },
-            });
+            processedChildren.push(
+                new TextNode({
+                    text: child,
+                    properties: {
+                        key: `auto_${nextChildIndex++}`,
+                    },
+                })
+            );
+        } else if (isArray(child)) {
+            for (let innerChild of child) {
+                processChild(innerChild);
+            }
         } else {
-            return child;
+            processedChildren.push(child);
         }
     }
-
-    let childIndex = 0;
-    for (let child of children) {
-        if (isArray(child)) {
-            processedChildren.concat(child.map(innerChild => processChild(innerChild, childIndex++)));
-        } else {
-            processedChildren.push(processChild(child, childIndex));
-        }
-    }
+    processChild(children);
 
     // Detect if this is an HTML node.
     if (isString(type)) {
