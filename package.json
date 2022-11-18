@@ -6,6 +6,6 @@
     },
     "devDependencies": {
         "@web/dev-server": "^0.1.35",
-        "@babel/parser": "^7.20.3"
+        "@web/dev-server-esbuild": "^0.3.3"
     }
 }

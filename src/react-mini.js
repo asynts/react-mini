@@ -14,6 +14,14 @@ export function ASSERT(condition) {
     }
 }
 
+function isString(value) {
+    return typeof value === "string" || value instanceof String;
+}
+
+function isArray(value) {
+    return Array.isArray(value);
+}
+
 export class Node {
     constructor() {
         // This will be updated by the constructor of the parent node.
@@ -448,12 +456,68 @@ export class HtmlNode extends Node {
                 this.renderedElement.addEventListener(eventName, propertyValue);
             } else {
                 // Regular attributes.
-                ASSERT(typeof propertyValue === "string" || propertyValue instanceof String);
+                ASSERT(isString(propertyValue));
                 this.renderedElement.setAttribute(propertyName, propertyValue);
             }
         }
     }
 }
+
+window.jsx_createComponent = (type, properties, ...children) => {
+    // The key property is mandatory.
+    ASSERT("key" in properties);
+
+    let processedChildren = [];
+
+    function processChild(child, childIndex) {
+        if (isString(child)) {
+            return new TextNode({
+                text: child,
+                properties: {
+                    key: `auto_${childIndex}`,
+                },
+            });
+        } else {
+            return child;
+        }
+    }
+
+    let childIndex = 0;
+    for (let child of children) {
+        if (isArray(child)) {
+            processedChildren.concat(child.map(innerChild => processChild(innerChild, childIndex++)));
+        } else {
+            processedChildren.push(processChild(child, childIndex));
+        }
+    }
+
+    // Detect if this is an HTML node.
+    if (isString(type)) {
+        return new HtmlNode({
+            elementType: type,
+            properties,
+            children: processedChildren,
+        });
+    }
+
+    // For components, the children are provided as property.
+    ASSERT(false === "children" in properties);
+    properties = {
+        ...properties,
+        children: processedChildren,
+    };
+
+    // Otherwise, we have a component node.
+    return new ComponentNode({
+        componentFunction: type,
+        properties,
+    });
+};
+
+window.jsx_createFragment = (type, properties, children) => {
+    // We do not support fragments at the moment.
+    ASSERT_NOT_REACHED();
+};
 
 export class Instance {
     mount(rootContainerElement, newNode) {

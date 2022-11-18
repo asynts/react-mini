@@ -315,226 +315,41 @@ function ListComponent({ properties, useState }) {
 function ConditionComponent({ properties, useState }) {
     let [visible, setVisible] = useState("visible", true);
 
-    /*
-    <div #1 key="root" class="component">
-        <h3 #1.1 key="0">
-            <text #1.2 key="1">Condition Component</text>
-        </h3>
-
-        {visible &&
-            <p #2 key="1">
-                <text #3 key="1">This is not always visible!</text>
-            </p>}
-        <button #4 key="2" $click={() => setVisible(!visible)}>
-            <text #5 key="1">Toggle Visibility</text>
-        </button>
-    </div>
-    */
-    let node_5 = new TextNode({
-        text: "Toggle Visiblity",
-        properties: {
-            key: "1",
-        },
-    });
-    let node_4 = new HtmlNode({
-        elementType: "button",
-        properties: {
-            key: "2",
-            $click: () => setVisible(!visible),
-        },
-        children: [
-            node_5,
-        ],
-    });
-    let node_3 = new TextNode({
-        text: "This is not always visible",
-        properties: {
-            key: "1",
-        },
-    });
-    let node_2 = new HtmlNode({
-        elementType: "p",
-        properties: {
-            key: "1",
-        },
-        children: [
-            node_3,
-        ],
-    });
-    let node_1_2 = new TextNode({
-        text: "Condition Component",
-        properties: {
-            key: "1",
-        },
-    });
-    let node_1_1 = new HtmlNode({
-        elementType: "h3",
-        properties: {
-            key: "0",
-        },
-        children: [
-            node_1_2,
-        ],
-    });
-    let node_1 = new HtmlNode({
-        elementType: "div",
-        properties: {
-            key: "root",
-            class: "component",
-        },
-        children: [
-            node_1_1,
-            ...(visible ? [node_2] : []),
-            node_4,
-        ],
-    });
-
-    console.log(node_1);
-    return node_1;
+    return (
+        <div key={properties.key} class="component">
+            <h3 key="1">Condition Component</h3>
+            {visible ? [<p key="2">This is not always visible</p>] : []}
+            <button key="3" $click={() => setVisible(!visible)}>Toggle Visibility</button>
+        </div>
+    );
 }
 
 function PropertyComponent({ properties, useState }) {
-    /*
-    <div #1 key="root" class="component">
-        <h3 #1.1 key="0">
-            <text #1.2 key="1">Property Component</text>
-        </h3>
-        <text #2 key="1">Was called with exampleProperty='{properties.exampleProperty}'</text>
-    </div>
-    */
-
-    let node_2 = new TextNode({
-        text: `Was called with exampleProperty='${properties.exampleProperty}'`,
-        properties: {
-            key: "1",
-        },
-    });
-    let node_1_2 = new TextNode({
-        text: "Property Component",
-        properties: {
-            key: "1",
-        },
-    });
-    let node_1_1 = new HtmlNode({
-        elementType: "h3",
-        properties: {
-            key: "0",
-        },
-        children: [
-            node_1_2,
-        ],
-    });
-    let node_1 = new HtmlNode({
-        elementType: "div",
-        properties: {
-            key: "root",
-            class: "component",
-        },
-        children: [
-            node_1_1,
-            node_2,
-        ],
-    });
-
-    return node_1;
+    return (
+        <div key={properties.key} class="component">
+            <h3 key="0">Property Component</h3>
+            Was called with exampleProperty='{properties.exampleProperty}'
+        </div>
+    );
 }
 
 function MainComponent({ properties, useState }) {
-    /*
-    <div #1 key="root" class="component">
-        <h3 #1.1 key="0">
-            <text #1.2 key="1">Main Component</text>
-        </h3>
-        <CalculatorComponent #2 key="1" />
-        <IncrementComponent #3 key="2" />
-        <CalculatorComponent #4 key="3" />
-        <ListComponent #5 key="4" />
-        <ConditionComponent #6 key="5" />
-        <PropertyComponent #7 key="6" exampleProperty="foo" />
-    </div>
-    */
+    return (
+        <div key={properties.key} class="component">
+            <h3 key="1">Main Component</h3>
 
-    let node_7 = new ComponentNode({
-        componentFunction: PropertyComponent,
-        properties: {
-            key: "6",
-            exampleProperty: "foo",
-        },
-    });
-    let node_6 = new ComponentNode({
-        componentFunction: ConditionComponent,
-        properties: {
-            key: "5",
-        },
-    });
-    let node_5 = new ComponentNode({
-        componentFunction: ListComponent,
-        properties: {
-            key: "4",
-        },
-    });
-    let node_4 = new ComponentNode({
-        componentFunction: CalculatorComponent,
-        properties: {
-            key: "3",
-        },
-    });
-    let node_3 = new ComponentNode({
-        componentFunction: IncrementComponent,
-        properties: {
-            key: "2",
-        },
-    });
-    let node_2 = new ComponentNode({
-        componentFunction: CalculatorComponent,
-        properties: {
-            key: "1",
-        },
-    });
-    let node_1_2 = new TextNode({
-        text: "Main Component",
-        properties: {
-            key: "1",
-        },
-    });
-    let node_1_1 = new HtmlNode({
-        elementType: "h3",
-        properties: {
-            key: "0",
-        },
-        children: [
-            node_1_2,
-        ],
-    });
-    let node_1 = new HtmlNode({
-        elementType: "div",
-        properties: {
-            key: "root",
-            class: "component",
-        },
-        children: [
-            node_1_1,
-            node_2,
-            node_3,
-            node_4,
-            node_5,
-            node_6,
-            node_7,
-        ],
-    });
-
-    return node_1;
+            <CalculatorComponent key="2" />
+            <IncrementComponent key="3" />
+            <CalculatorComponent key="4" />
+            <ListComponent key="5" />
+            <ConditionComponent key="6" />
+            <PropertyComponent key="7" exampleProperty="foo" />
+        </div>
+    );
 }
-
-let component = new ComponentNode({
-    componentFunction: MainComponent,
-    properties: {
-        key: "root",
-    },
-});
 
 new Instance()
     .mount(
         document.getElementById("root-container"),
-        component,
+        <MainComponent key="root" />,
     );
