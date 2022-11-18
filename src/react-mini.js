@@ -44,7 +44,8 @@ export class Node {
                     && this.componentFunction === otherNode.componentFunction;
 
             case TextNode:
-                return this.properties.key === otherNode.properties.key;
+                // The text nodes do not have keys, because it doesn't matter if we reconcile them incorrectly.
+                return true;
 
             default:
                 ASSERT_NOT_REACHED();
@@ -294,13 +295,10 @@ export class ComponentNode extends Node {
 }
 
 export class TextNode extends Node {
-    constructor({ text, properties, renderedElement }) {
+    constructor({ text, renderedElement }) {
         super();
 
         this.text = text;
-
-        ASSERT("key" in properties);
-        this.properties = properties;
 
         if (renderedElement !== undefined) {
             this.renderedElement = renderedElement;
@@ -468,7 +466,6 @@ window.jsx_createComponent = (type, properties, ...children) => {
     ASSERT("key" in properties);
 
     let processedChildren = [];
-    let nextChildIndex = 0;
     function processChild(child) {
         // Skip placeholder values created by use of '&&' or '||'.
         if (child === null || child === false || child === true) {
@@ -476,14 +473,7 @@ window.jsx_createComponent = (type, properties, ...children) => {
         }
 
         if (isString(child)) {
-            processedChildren.push(
-                new TextNode({
-                    text: child,
-                    properties: {
-                        key: `auto_${nextChildIndex++}`,
-                    },
-                })
-            );
+            processedChildren.push(new TextNode({ text: child }));
         } else if (isArray(child)) {
             for (let innerChild of child) {
                 processChild(innerChild);
