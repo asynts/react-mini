@@ -127,44 +127,5 @@ function MainComponent({ properties, useState }) {
 
 mount(
     document.getElementById("root-container"),
-    new ComponentNode({
-        componentFunction: ({ properties, useState}) => {
-            let [counter, setCounter] = useState(0);
-
-            return new HtmlNode({
-                elementType: "div",
-                properties: {
-                    key: properties.key,
-                },
-                children: [
-                    new HtmlNode({
-                        elementType: "p",
-                        properties: {
-                            key: "1",
-                        },
-                        children: [
-                            new TextNode({
-                                text: `Counter: ${counter}`,
-                            }),
-                        ],
-                    }),
-                    new HtmlNode({
-                        elementType: "button",
-                        properties: {
-                            key: "2",
-                            $click: () => setCounter(counter + 1),
-                        },
-                        children: [
-                            new TextNode({
-                                text: "Increment",
-                            }),
-                        ],
-                    }),
-                ],
-            });
-        },
-        properties: {
-            key: "root",
-        },
-    }),
+    <MainComponent key="root" />,
 );
