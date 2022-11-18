@@ -39,6 +39,7 @@ export class Node {
         this.nextSibling = null;
     }
 
+    // This logic decides if we reconcile this node with the other node.
     isEqual(otherNode) {
         // The type must match.
         if (this.constructor !== otherNode.constructor) {
@@ -88,20 +89,22 @@ export class Node {
         ASSERT_NOT_REACHED();
     }
 
-    // When a change occurs, we provide the 'oldNode' that existed before the change.
-    // We can use this to obtain the 'renderedElement' and assume that the element matches what the node describes.
+    // This will update the DOM to match what 'this' describes.
+    // We are provided with an 'oldNode' that describes how things used to be.
     //
-    // The caller can either be 'Instance.mount' the 'setValue' function in 'useState'.
+    // Note: The caller can either be 'Instance.mount' the 'setValue' function in 'ComponentNode.useState'.
     //
-    // Returns the next node that should be passed to the next new sibling.
+    // Note: The 'oldNode' can be 'null' if this element is rendered for the first time.
+    //       Then 'parentElement' must not be 'null', otherwise, 'parentElement' is not needed.
+    //
+    // Returns the node that should be passed as 'oldNode' to the render function of the next sibling if it exists.
     render({ oldNode, parentElement }) {
         // There are four types of matches that can occur:
         //
         // -   DIRECT_MATCH means that the node we encounter matches what we expect.
         //     We update the DOM node and then recursively handle child nodes.
         //
-        //     This happens for everything that doesn't appear in a list.
-        //     The 'SentinelNode' is used to ensure that conditionally rendered elements are a direct match.
+        //     This happens if the node is where it used to be.
         //
         // -   SKIP_MATCH means that the node we encounter doesn't match what we expect.
         //     However, we were able to fast-forward and found a matching sibling.
@@ -110,17 +113,18 @@ export class Node {
         //     We update the DOM node and then recursively handle child nodes.
         //
         //     This happens if a list of elements is rendered and items are removed or inserted.
+        //     This happens if a conditional element disappears but another element after it matches.
         //
         // -   NO_MATCH means that we were unable to find a matching node.
         //     We insert a new DOM node and then recursively handle child nodes.
         //
         //     This happens if something is added to a list and thus didn't exist in the previous render.
+        //     This happens if a conditional element reappears.
         //
         // -   NO_MATCH_NEW occurs when we were unable to find a matching node and we don't even have a candidate.
         //     We append a new DOM node to the parent and recursively handle child nodes.
         //
         //     This happens if a node is rendered for the first time.
-        //     It doesn't happen for the root node because we create a fake element for that.
 
         let handle_DIRECT_MATCH = () => {
             if (DEBUG_RENDER_MATCHING) {
@@ -206,6 +210,11 @@ export class Node {
     }
 }
 
+// Component nodes can store state.
+// The state is indexed by the call order of 'useState', same as React.
+//
+// The state can be modified in-place without copying the node.
+// However, for the next render a new node must be created and the state must be copied over.
 export class ComponentNode extends Node {
     constructor({ componentFunction, properties }) {
         super()
@@ -409,7 +418,7 @@ export class HtmlNode extends Node {
             }
         }
 
-        // Remove attributes that do not appear in this node.
+        // Remove attributes that do not appear in this node anymore.
         for (let propertyName of Object.keys(this.renderedElement.attributes)) {
             if (false === propertyName in this.properties) {
                 this.renderedElement.removeAttribute(propertyName);
@@ -478,12 +487,14 @@ export class HtmlNode extends Node {
     }
 }
 
-// We use esbuild to automatically compile JSX into calls to these functions:
+// We use esbuild to automatically compile JSX into calls to this function:
 //
-//     cat input.jsx | esbuild --loader=jsx --jsx-factory=jsx_createComponent > output.js
+//     cat foo.jsx | esbuild --loader=jsx --jsx-factory=jsx_createComponent > foo.js
 //
 // For this to work we need to accept the same syntax that 'React.createElement' uses.
-// By setting this on 'window' it will be accessible without import (if the module has been loaded.)
+// By setting this on 'window' it will be accessible without impot (if the module has been loaded.)
+//
+// Note: You can look at the output of the esbuild command for more details.
 window.jsx_createComponent = (type, properties, ...children) => {
     // The key property is mandatory.
     ASSERT("key" in properties);
