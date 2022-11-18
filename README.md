@@ -11,25 +11,24 @@ Then it's really weird.
 
     Turns out that the call order is used to distinguish calls, this is why they must appear on the top level.
 
--   How does an `<input />` element retain focus on it if you continiously use the `onChange` event to update the `value` attribute?
+-   How does an `<input />` element retain focus on it if you use the `onChange` event to update the `value` attribute?
 
-    Shouldn't it be swapped out for a new element?
+    Doesn't React swap it out for a new element?
 
-    Then how does the browser know in which input field the focus should go?
+    But if there are multiple input element, how does React know which one should be focused?
 
-    Turns out that it guesses which elements from the previous render match to the elements in the current render.
-    Then it doesn't swap them out with new ones, but only updates them by setting the attributes on them.
+    Turns out that it matches the elements from the previous render with the elements of the current render.
+    Then it simply updates the attributes of that element without re-creating it, that retains the focus.
 
 -   ...
 
-All of these questions can be answered online easily.
-However, I wanted to implement it myself and it turns out that this is much harder than expected.
+I am certainly not the first to ask these questions.
+There are answers avaliable online.
 
-The internals of React are outlined in serveral articles.
-However, I found it very hard to structure the code properly.
-There are also a lot of details to deal with.
+However, it caught my interest and I spend some time coming up with my own implementation.
+I did read a lot of articles about the internals of React, but I looked at the source very little.
 
-If you are interested, try implementing React for yourself.
+*If you are looking for an accurate description of how React works, this probably isn't it.*
 
 ### Notes
 
