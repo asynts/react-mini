@@ -11,11 +11,10 @@ Then it's really weird.
 
     Turns out that the call order is used to distinguish calls, this is why they must appear on the top level.
 
--   How does an `<input />` element retain focus on it if you use the `onChange` event to update the `value` attribute?
+-   How does an `<input />` element retain focus if `onChange` modifies the `value` attribute?
 
-    Doesn't React swap it out for a new element?
-
-    But if there are multiple input element, how does React know which one should be focused?
+    The component should re-render and a new element should be created.
+    If there are multiple, how does React know which one should be focused?
 
     Turns out that it matches the elements from the previous render with the elements of the current render.
     Then it simply updates the attributes of that element without re-creating it, that retains the focus.
@@ -23,84 +22,102 @@ Then it's really weird.
 -   ...
 
 I am certainly not the first to ask these questions.
-There are answers avaliable online.
+There many are answers avaliable online.
 
-However, it caught my interest and I spend some time coming up with my own implementation.
-I did read a lot of articles about the internals of React, but I looked at the source very little.
+However, this caught my interest and I created my own simplified implementation of React.
+This is based primarily on blog articles that discuss the internals of React.
+I didn't look at the source code of React much.
 
 *If you are looking for an accurate description of how React works, this probably isn't it.*
 
-### Notes
+### Setup
 
--   Launch with `yarn start`, this should open a web-browser at `http://localhost:8001` by default.
+Install dependencies with `yarn install` and run with `yarn start`.
+This should open a web-browser at `http://localhost:8001` by default.
 
--   The `mount` function is the entry point.
+### Details
 
--   The project is setup with JSX, this is configured in `web-dev-server.config.mjs` and is explained at the `jsx_createComponent` function.
-    You can also create trees of `HtmlNode`, `ComponentNode` and `TextNode` manually:
+In [`index.jsx`](./src/index.jsx) there are some components defined that should look familiar to React developers.
+But instead of using React, all the code has been implemented by myself.
+The syntax is slightly different, because I require a `key` attribute to be always present.
 
-    ```js
-    import {
-        mount,
-        ComponentNode,
-        HtmlNode,
-        TextNode
-    } from "./react-mini.js";
+There is a bit of magic going on behind the scenes.
+I use `@web/dev-server-esbuild` to parse the JSX syntax and to generate matching JavaScript code.
+This is configured in [`web-dev-server.config.mjs`](./web-dev-server.config.mjs) and is explained further in [`react-mini.js`](./src/react-mini.js) when
+`jsx_createComponent` is defined.
 
-    /*
-    function IncrementComponent(properties, useState) {
-        let [counter, setCounter] = useState(0);
-        return (
-            <div key={properties.key}>
-                <p key="1">Counter: {counter}</p>
-                <button key="2" $click={() => setCounter(counter + 1)}>
-                    Increment
-                </button>
-            </div>
-        );
-    }
-    */
-    mount(
-        document.getElementById("root-container"),
-        new ComponentNode({
-            componentFunction: ({ properties, useState}) => {
-                let [counter, setCounter] = useState(0);
+If you are reading through the code, the `mount` function is the entry point, this is similar to `ReactDOM.createRoot(/* ... */).render(/* ... */)` in React.
 
-                return new HtmlNode({
-                    elementType: "div",
-                    properties: {
-                        key: properties.key,
-                    },
-                    children: [
-                        new HtmlNode({
-                            elementType: "p",
-                            properties: {
-                                key: "1",
-                            },
-                            children: [
-                                new TextNode({
-                                    text: `Counter: ${counter}`,
-                                }),
-                            ],
-                        }),
-                        new HtmlNode({
-                            elementType: "button",
-                            properties: {
-                                key: "2",
-                                $click: () => setCounter(counter + 1),
-                            },
-                            children: [
-                                new TextNode({
-                                    text: "Increment",
-                                }),
-                            ],
-                        }),
-                    ],
-                });
-            },
-            properties: {
-                key: "root",
-            },
-        }),
+It is also possible to use the library without JSX which may be more intuitive:
+
+
+```js
+import {
+    mount,
+    ComponentNode,
+    HtmlNode,
+    TextNode
+} from "./react-mini.js";
+
+/*
+function IncrementComponent(properties, useState) {
+    let [counter, setCounter] = useState(0);
+    return (
+        <div key={properties.key}>
+            <p key="1">Counter: {counter}</p>
+            <button key="2" $click={() => setCounter(counter + 1)}>
+                Increment
+            </button>
+        </div>
     );
-    ```
+}
+
+mount(
+    document.getElementById("root-container"),
+    <IncrementComponent key="root" />,
+);
+*/
+mount(
+    document.getElementById("root-container"),
+    new ComponentNode({
+        componentFunction: ({ properties, useState}) => {
+            let [counter, setCounter] = useState(0);
+
+            return new HtmlNode({
+                elementType: "div",
+                properties: {
+                    key: properties.key,
+                },
+                children: [
+                    new HtmlNode({
+                        elementType: "p",
+                        properties: {
+                            key: "1",
+                        },
+                        children: [
+                            new TextNode({
+                                text: `Counter: ${counter}`,
+                            }),
+                        ],
+                    }),
+                    new HtmlNode({
+                        elementType: "button",
+                        properties: {
+                            key: "2",
+                            $click: () => setCounter(counter + 1),
+                        },
+                        children: [
+                            new TextNode({
+                                text: "Increment",
+                            }),
+                        ],
+                    }),
+                ],
+            });
+        },
+        properties: {
+            key: "root",
+        },
+    }),
+);
+```

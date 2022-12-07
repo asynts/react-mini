@@ -1,4 +1,4 @@
-import { mount, ComponentNode, HtmlNode, TextNode } from "./react-mini.js";
+import { mount } from "./react-mini.js";
 
 function IncrementComponent({ properties, useState }) {
     let [counter, setCounter] = useState(0);
